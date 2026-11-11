@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-secondary": "#ffffff", "surface-tint": "#0053db", "on-primary-fixed": "#00174b", "on-secondary-container": "#684000", "surface-container-high": "#e2e7ff", "tertiary": "#ad0033", "surface-container": "#eaedff", "surface-bright": "#faf8ff", "error": "#ba1a1a", "tertiary-fixed-dim": "#ffb2b7", "on-secondary-fixed": "#2a1700", "tertiary-container": "#d22348", "inverse-surface": "#283044", "primary-fixed": "#dbe1ff", "primary-container": "#2563eb", "secondary": "#855300", "inverse-primary": "#b4c5ff", "outline-variant": "#c3c6d7", "primary": "#004ac6", "secondary-fixed-dim": "#ffb95f", "tertiary-fixed": "#ffdadb", "on-tertiary-fixed-variant": "#92002a", "on-tertiary": "#ffffff", "on-surface-variant": "#434655", "on-error-container": "#93000a", "outline": "#737686", "on-error": "#ffffff", "background": "#faf8ff", "primary-fixed-dim": "#b4c5ff", "on-tertiary-fixed": "#40000d", "on-tertiary-container": "#ffecec", "secondary-container": "#fea619", "surface-container-lowest": "#ffffff", "inverse-on-surface": "#eef0ff", "surface-container-low": "#f2f3ff", "surface-container-highest": "#dae2fd", "on-background": "#131b2e", "error-container": "#ffdad6", "surface": "#faf8ff", "secondary-fixed": "#ffddb8", "on-primary-fixed-variant": "#003ea8", "on-primary-container": "#eeefff", "on-surface": "#131b2e", "surface-dim": "#d2d9f4", "on-secondary-fixed-variant": "#653e00", "on-primary": "#ffffff", "surface-variant": "#dae2fd" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-sm": "0.5rem", "gutter": "0.75rem", "margin-desktop": "1.5rem", "space-lg": "1rem", "margin-mobile": "0.75rem", "space-xl": "1.5rem", "gutter-desktop": "1.25rem", "space-md": "0.75rem", "space-xs": "0.25rem", "margin": "1rem" }, fontFamily: { "headline-lg-mobile": ["Plus Jakarta Sans"], "label-md": ["Inter"], "headline-md": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "body-md": ["Inter"], "body-sm": ["Inter"], "headline-lg": ["Plus Jakarta Sans"], "body-lg": ["Inter"], "label-lg": ["Inter"], "label-sm": ["Inter"] }, fontSize: { "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }], "label-md": ["11px", { "lineHeight": "16px", "fontWeight": "500" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["30px", { "lineHeight": "38px", "fontWeight": "700" }], "body-lg": ["16px", { "lineHeight": "26px", "fontWeight": "400" }], "label-lg": ["13px", { "lineHeight": "18px", "fontWeight": "600" }], "label-sm": ["10px", { "lineHeight": "14px", "fontWeight": "600" }] } } } }</script><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface font-body-md text-on-surface flex flex-col min-h-screen antialiased selection:bg-primary-fixed selection:text-on-primary-fixed"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] pt-safe"><div class="h-14 px-gutter flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-xs shrink-0"><img alt="DocuCraft Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrDtSfZKFO9WUmI409JlsKGlzpVW0CNLp10ARNo2kWFjOOMx9zZWK1HYmismGNYDvduVMx8-T0ZwD9cdyizD5h9X0OLbTFX-Xf6zBeQUYkG8MaXroMQLkFRQ6vt0FpfRWT2tQ4ip39wOWtyeV_cCD4pUPVH8fY_yknJDXTBx1Rg22IM8KLoc9rOx0oKsr-ub7JokoKB4yQZF-Ob8lyyvazg1kZsEib0-HhoKXIxTbqni"/><span class="hidden font-headline-sm text-headline-sm text-primary font-bold tracking-tight sm:inline">DocuCraft</span></div><div class="flex items-center gap-space-xs min-w-0 flex-1 justify-center px-space-xs"><div class="flex items-center gap-space-xs bg-surface-container-low px-space-sm py-1 rounded-lg max-w-[190px] w-full"><span class="material-symbols-outlined text-outline text-[18px] shrink-0">description</span><span class="font-label-lg text-label-lg text-on-surface truncate">Recursos</span><span class="material-symbols-outlined text-outline text-[14px] shrink-0">edit</span></div></div><div class="flex items-center gap-1 shrink-0"><button aria-label="Deshacer" class="w-9 h-9 min-w-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">undo</span></button><button aria-label="Rehacer" class="w-9 h-9 min-w-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">redo</span></button><button aria-label="Alternar modo oscuro" class="w-9 h-9 min-w-[36px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors" id="theme-toggle" type="button"><span class="material-symbols-outlined text-[20px]">dark_mode</span></button><button class="flex items-center gap-1 bg-primary text-on-primary px-space-sm py-1.5 rounded-lg font-label-md text-label-md hover:bg-surface-tint active:scale-[0.98] transition-all shrink-0" type="button"><span class="material-symbols-outlined text-[18px]">ios_share</span><span class="hidden xs:inline">Exportar</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 ml-0.5"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex flex-col relative w-full pt-14 pb-20 bg-surface flex-1 min-h-screen"><div class="flex flex-col w-full relative">
+<!-- Vista previa de Fondo: Lienzo de Edición PDF con efecto atenuado -->
+<div class="relative w-full px-gutter pt-space-md pb-space-xl opacity-40 blur-[2px] pointer-events-none select-none">
+<!-- Barra contextual del editor simulada -->
+<div class="flex items-center justify-between bg-surface-container-low px-space-md py-space-xs rounded-xl shadow-sm mb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[20px] text-primary">layers</span>
+<span class="font-label-md text-label-md text-on-surface">Página 1 de 4 • Escala 100%</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-outline">zoom_in</span>
+<span class="material-symbols-outlined text-[18px] text-outline">grid_4x4</span>
+</div>
+</div>
+<!-- Hoja simulada A4 con maquetación vectorial -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-md p-space-lg flex flex-col gap-space-md">
+<div class="w-2/3 h-6 bg-surface-container-highest rounded"></div>
+<div class="w-full h-3 bg-surface-container-high rounded"></div>
+<div class="w-5/6 h-3 bg-surface-container-high rounded"></div>
+<div class="w-4/5 h-3 bg-surface-container-high rounded"></div>
+<!-- Cuadrícula de maqueta técnica en PDF -->
+<div class="w-full h-36 bg-surface-container-low rounded-lg p-space-sm flex items-center justify-center">
+<svg class="w-full h-full text-outline-variant" fill="none" stroke="currentColor" stroke-width="1.5" viewbox="0 0 240 120">
+<rect height="80" rx="6" stroke-dasharray="3 3" width="80" x="20" y="20"></rect>
+<circle cx="170" cy="60" r="36"></circle>
+<path d="M100 60 L134 60" marker-end="url(#arrow)"></path>
+</svg>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded"></div>
+<div class="w-3/4 h-3 bg-surface-container-high rounded"></div>
+</div>
+</div>
+<!-- Capa de oscurecimiento suave -->
+<div class="fixed inset-0 top-14 pb-16 bg-on-surface/40 backdrop-blur-[4px] z-20 pointer-events-none"></div>
+<!-- Modal / Bottom Sheet Flotante Principal -->
+<div class="relative z-30 w-full bg-surface-container-lowest rounded-t-2xl shadow-xl flex flex-col mt-[-180px]">
+<!-- Cabecera táctil con tirador deslizante (Pill) -->
+<div class="w-full flex flex-col items-center pt-space-xs pb-space-sm px-gutter">
+<div class="w-9 h-1 bg-outline-variant rounded-full mb-space-sm"></div>
+<div class="w-full flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[22px] text-primary" style="font-variation-settings: 'FILL' 1;">shapes</span>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface leading-tight">Formas y Recursos</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Geometría vectorial y medios para PDF</p>
+</div>
+</div>
+<button aria-label="Cerrar modal" class="w-8 h-8 rounded-lg bg-surface-container-low text-on-surface-variant flex items-center justify-center active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Pestañas de filtrado rápido estilo pastilla -->
+<div class="px-gutter pb-space-sm">
+<div class="flex items-center gap-space-xs bg-surface-container-low p-1 rounded-xl overflow-x-auto no-scrollbar">
+<button class="cat-pill active flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md shadow-sm shrink-0 transition-all" id="tab-shapes" onclick="switchCategory('shapes')" type="button">
+<span class="material-symbols-outlined text-[16px]">category</span>
+<span>Geometría</span>
+</button>
+<button class="cat-pill flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-transparent text-on-surface-variant hover:bg-surface-container-high font-label-md text-label-md shrink-0 transition-all" id="tab-polygons" onclick="switchCategory('polygons')" type="button">
+<span class="material-symbols-outlined text-[16px]">pentagon</span>
+<span>N-Polígonos</span>
+</button>
+<button class="cat-pill flex items-center gap-1.5 px-space-md py-1.5 rounded-lg bg-transparent text-on-surface-variant hover:bg-surface-container-high font-label-md text-label-md shrink-0 transition-all" id="tab-media" onclick="switchCategory('media')" type="button">
+<span class="material-symbols-outlined text-[16px]">image</span>
+<span>Imágenes y Medios</span>
+</button>
+</div>
+</div>
+<!-- Contenido Scrollable del Panel -->
+<div class="px-gutter flex flex-col gap-space-lg pb-space-lg max-h-[548px] overflow-y-auto">
+<!-- SECCIÓN 1: Formas Básicas -->
+<section class="flex flex-col gap-space-xs" id="section-basic">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold tracking-wide">Formas Básicas</span>
+<span class="font-label-sm text-label-sm text-outline">Vectorial SVG</span>
+</div>
+<div class="grid grid-cols-4 gap-space-xs">
+<!-- Rectángulo Perfecto -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('rect', 'Rectángulo Puro')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<rect height="14" rx="1.5" width="18" x="3" y="5"></rect>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Rectángulo</span>
+</button>
+<!-- Rectángulo Esquinas Redondeadas Dinámicas -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('rounded-rect', 'Rectángulo Suave')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<rect height="16" rx="6" width="18" x="3" y="4"></rect>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Borde Curvo</span>
+</button>
+<!-- Círculo Exacto -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('circle', 'Círculo Ortogonal')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="8.5"></circle>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Círculo</span>
+</button>
+<!-- Elipse -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('ellipse', 'Elipse Longitudinal')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<ellipse cx="12" cy="12" rx="9" ry="5.5"></ellipse>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Elipse</span>
+</button>
+</div>
+</section>
+<!-- SECCIÓN 2: Formas Complejas, Rombos y Flechas -->
+<section class="flex flex-col gap-space-xs" id="section-complex">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold tracking-wide">Polígonos y Conectores</span>
+<span class="font-label-sm text-label-sm text-outline">Precisión DIN</span>
+</div>
+<div class="grid grid-cols-4 gap-space-xs">
+<!-- Rombo -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('rhombus', 'Rombo / Diamante')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<polygon points="12,3 21,12 12,21 3,12"></polygon>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Rombo</span>
+</button>
+<!-- Paralelogramo -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('parallelogram', 'Paralelogramo')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<polygon points="7,5 21,5 17,19 3,19"></polygon>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Inclinado</span>
+</button>
+<!-- Trapecio -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('trapezoid', 'Trapecio Regular')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<polygon points="6,6 18,6 21,18 3,18"></polygon>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Trapecio</span>
+</button>
+<!-- Estrella de 5 Puntas -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('star', 'Estrella Simétrica')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<polygon points="12,2 15,9 22,9 16.5,14 18.5,21 12,17 5.5,21 7.5,14 2,9 9,9"></polygon>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Estrella</span>
+</button>
+<!-- Flecha Simple -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('arrow-right', 'Flecha de Bloque')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M4 12h12M12 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Flecha</span>
+</button>
+<!-- Flecha Bidireccional -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('arrow-bidirectional', 'Flecha Bidireccional')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M7 8l-4 4 4 4M17 8l4 4-4 4M3 12h18" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Doble Vía</span>
+</button>
+<!-- Flecha Curva de Proceso -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('arrow-curve', 'Flecha de Proceso Curvo')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M4 17a8 8 0 0 1 12-7h4m-3-3l3 3-3 3" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Proceso</span>
+</button>
+<!-- Chevron de Flujo -->
+<button class="shape-btn flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-all active:scale-95 group focus:outline-none" onclick="selectShape('chevron-flow', 'Chevron Direccional')" type="button">
+<div class="w-10 h-10 flex items-center justify-center mb-1">
+<svg class="w-7 h-7 text-on-surface group-hover:text-primary transition-colors" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24">
+<path d="M7 5l7 7-7 7M13 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
+</div>
+<span class="font-label-sm text-label-sm truncate w-full text-center">Chevron</span>
+</button>
+</div>
+</section>
+<!-- SECCIÓN 3: Polígonos Regulares de N-Lados Dinámicos e Interactivos -->
+<section class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-2xl" id="section-polygons">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-primary">interests</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Polígono Regular (N-Lados)</span>
+</div>
+<span class="px-space-xs py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm" id="polygon-badge">Hexágono (6L)</span>
+</div>
+<!-- Área de Previsualización Geométrica Interactiva en Tiempo Real -->
+<div class="w-full flex items-center justify-between gap-space-md bg-surface-container-lowest p-space-sm rounded-xl shadow-sm">
+<div class="w-28 h-28 relative flex items-center justify-center bg-surface-container-low rounded-lg overflow-hidden shrink-0">
+<!-- SVG dinámico que se redibuja vía JS -->
+<svg class="w-24 h-24 text-primary transition-all duration-300" id="polygon-preview-svg" viewbox="0 0 100 100">
+<polygon fill="#dbe1ff" id="polygon-shape-path" points="50,15 80,32 80,68 50,85 20,68 20,32" stroke="#004ac6" stroke-linejoin="round" stroke-width="3"></polygon>
+</svg>
+<span class="absolute bottom-1 font-label-sm text-label-sm text-on-surface-variant font-medium" id="preview-caption">6 lados</span>
+</div>
+<div class="flex flex-col gap-space-xs flex-1 min-w-0">
+<!-- Stepper Numérico Táctil -->
+<span class="font-label-sm text-label-sm text-on-surface-variant">Número de Vértices:</span>
+<div class="flex items-center bg-surface-container h-10 rounded-lg p-0.5 shadow-sm">
+<button class="w-9 h-9 rounded bg-surface-container-lowest hover:bg-surface-container-high text-on-surface flex items-center justify-center active:scale-90 transition-all" onclick="adjustSides(-1)" type="button">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<div class="flex-1 text-center font-headline-sm text-headline-sm text-primary tabular-nums" id="polygon-sides-display">6</div>
+<button class="w-9 h-9 rounded bg-surface-container-lowest hover:bg-surface-container-high text-on-surface flex items-center justify-center active:scale-90 transition-all" onclick="adjustSides(1)" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Botonera Rápida de Lados Típicos -->
+<div class="flex items-center gap-1 justify-between pt-1">
+<button class="side-preset flex-1 py-1 rounded bg-surface-container hover:bg-surface-container-high font-label-sm text-label-sm text-on-surface transition-all" onclick="setSides(5)" type="button">5L</button>
+<button class="side-preset flex-1 py-1 rounded bg-primary text-on-primary font-label-sm text-label-sm transition-all" onclick="setSides(6)" type="button">6L</button>
+<button class="side-preset flex-1 py-1 rounded bg-surface-container hover:bg-surface-container-high font-label-sm text-label-sm text-on-surface transition-all" onclick="setSides(7)" type="button">7L</button>
+<button class="side-preset flex-1 py-1 rounded bg-surface-container hover:bg-surface-container-high font-label-sm text-label-sm text-on-surface transition-all" onclick="setSides(8)" type="button">8L</button>
+<button class="side-preset flex-1 py-1 rounded bg-surface-container hover:bg-surface-container-high font-label-sm text-label-sm text-on-surface transition-all" onclick="setSides(10)" type="button">10L</button>
+</div>
+</div>
+</div>
+<!-- Controles de Trazo (Stroke) y Relleno (Fill) -->
+<div class="grid grid-cols-2 gap-space-sm pt-space-xs">
+<!-- Grosor de Trazo -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Grosor de trazo</span>
+<span class="font-label-sm text-label-sm font-semibold text-primary" id="stroke-val">3 pt</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-lowest p-1 rounded-lg">
+<button class="stroke-btn flex-1 py-1 rounded text-center font-label-sm text-label-sm bg-surface-container text-on-surface" onclick="setStroke(1)" type="button">1pt</button>
+<button class="stroke-btn flex-1 py-1 rounded text-center font-label-sm text-label-sm bg-primary text-on-primary" onclick="setStroke(3)" type="button">3pt</button>
+<button class="stroke-btn flex-1 py-1 rounded text-center font-label-sm text-label-sm bg-surface-container text-on-surface" onclick="setStroke(5)" type="button">5pt</button>
+</div>
+</div>
+<!-- Muestrario de Rellenos -->
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Relleno activo</span>
+<div class="flex items-center gap-1.5 bg-surface-container-lowest p-1.5 rounded-lg justify-around">
+<button class="w-6 h-6 rounded-full bg-primary-fixed border-2 border-primary ring-1 ring-primary/30 focus:outline-none" onclick="setFillColor('#dbe1ff', '#004ac6')" type="button"></button>
+<button class="w-6 h-6 rounded-full bg-secondary-fixed focus:outline-none" onclick="setFillColor('#ffddb8', '#855300')" type="button"></button>
+<button class="w-6 h-6 rounded-full bg-tertiary-fixed focus:outline-none" onclick="setFillColor('#ffdadb', '#ad0033')" type="button"></button>
+<button class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-outline focus:outline-none" onclick="setFillColor('transparent', '#004ac6')" type="button">
+<span class="material-symbols-outlined text-[14px]">format_color_reset</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- SECCIÓN 4: Imágenes y Medios -->
+<section class="flex flex-col gap-space-sm" id="section-media">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold tracking-wide">Imágenes y Contenido Externo</span>
+<span class="font-label-sm text-label-sm text-outline">Portapapeles &amp; Archivos</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Botón Pegar Imagen desde Portapapeles -->
+<button class="flex items-center gap-space-sm p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-all active:scale-95 text-left group" onclick="triggerClipboardAction()" type="button">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest text-primary group-hover:bg-primary group-hover:text-on-primary flex items-center justify-center transition-colors shrink-0 shadow-sm">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+<rect height="4" rx="1" width="8" x="8" y="2"></rect>
+<path d="M9 14l2 2 4-4"></path>
+</svg>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Pegar Clipboard</span>
+<span class="font-label-sm text-label-sm text-outline">Ctrl+V / Portapapeles</span>
+</div>
+</button>
+<!-- Botón Subir Archivo -->
+<button class="flex items-center gap-space-sm p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-all active:scale-95 text-left group" onclick="triggerUploadAction()" type="button">
+<div class="w-10 h-10 rounded-lg bg-surface-container-lowest text-primary group-hover:bg-primary group-hover:text-on-primary flex items-center justify-center transition-colors shrink-0 shadow-sm">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24">
+<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+<polyline points="17 8 12 3 7 8"></polyline>
+<line x1="12" x2="12" y1="3" y2="15"></line>
+</svg>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Cargar Archivo</span>
+<span class="font-label-sm text-label-sm text-outline">Galería / PDF</span>
+</div>
+</button>
+</div>
+<!-- Ajustes de Transparencia y Envoltura de Texto -->
+<div class="bg-surface-container-low p-space-sm rounded-xl flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">Envoltura de Texto alrededor del Recurso</span>
+<div class="flex items-center gap-1 bg-surface-container-lowest p-0.5 rounded-lg">
+<button class="w-7 h-7 rounded bg-primary text-on-primary flex items-center justify-center" title="Alineado con texto" type="button">
+<span class="material-symbols-outlined text-[16px]">wrap_text</span>
+</button>
+<button class="w-7 h-7 rounded text-on-surface-variant hover:bg-surface-container flex items-center justify-center" title="Delante del texto" type="button">
+<span class="material-symbols-outlined text-[16px]">flip_to_front</span>
+</button>
+<button class="w-7 h-7 rounded text-on-surface-variant hover:bg-surface-container flex items-center justify-center" title="Detrás del texto" type="button">
+<span class="material-symbols-outlined text-[16px]">flip_to_back</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<span class="font-label-md text-label-md text-on-surface">Opacidad predeterminada (100%)</span>
+<div class="flex items-center gap-2">
+<input class="w-24 accent-primary h-1.5 bg-surface-container rounded-lg cursor-pointer" max="100" min="10" type="range" value="100"/>
+<span class="font-label-sm text-label-sm text-outline font-mono">1.0</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Mensaje de estado de selección dinámico -->
+<div class="flex items-center justify-between p-space-sm bg-surface-container-highest/60 rounded-xl" id="selection-status-card">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-md text-label-md text-on-surface">Selección actual: <strong class="font-semibold text-primary" id="selected-label">Hexágono Regular</strong></span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Vectorial SVG</span>
+</div>
+</div>
+<!-- Barra Inferior de Acción y Confirmación -->
+<div class="p-gutter bg-surface-container-lowest shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center gap-space-sm">
+<button class="w-12 h-12 rounded-xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high flex items-center justify-center active:scale-95 transition-all shrink-0" onclick="cancelSelection()" type="button">
+<span class="material-symbols-outlined text-[20px]">undo</span>
+</button>
+<button class="flex-1 h-12 bg-primary hover:bg-surface-tint text-on-primary rounded-xl font-label-lg text-label-lg font-semibold flex items-center justify-center gap-space-xs shadow-md active:scale-[0.98] transition-all" id="insert-action-btn" onclick="insertResourceToDoc()" type="button">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Insertar en el Documento</span>
+</button>
+</div>
+</div>
+<!-- Toast flotante de confirmación táctil -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4 max-w-[340px] w-[90%] bg-inverse-surface text-inverse-on-surface px-space-md py-2.5 rounded-full shadow-lg flex items-center justify-between gap-space-xs" id="toast-feedback">
+<div class="flex items-center gap-2 min-w-0">
+<span class="material-symbols-outlined text-secondary-container text-[20px] shrink-0">task_alt</span>
+<span class="font-body-sm text-body-sm truncate" id="toast-text">Forma insertada con éxito</span>
+</div>
+<button class="text-primary-fixed-dim font-label-sm text-label-sm uppercase font-semibold shrink-0 hover:underline" onclick="hideToast()" type="button">
+      Editar
+    </button>
+</div>
+</div>
+<script>
+  let currentSides = 6;
+  let currentStroke = 3;
+  let currentFill = '#dbe1ff';
+  let currentStrokeColor = '#004ac6';
+  let activeShapeName = 'Hexágono Regular (6L)';
+
+  const polygonNames = {
+    3: 'Triángulo Equilátero',
+    4: 'Cuadrilátero / Rombo',
+    5: 'Pentágono Convexo',
+    6: 'Hexágono Regular',
+    7: 'Heptágono Simétrico',
+    8: 'Octágono Regular',
+    9: 'Eneágono',
+    10: 'Decágono Proporcional',
+    12: 'Dodecágono Geométrico'
+  };
+
+  function calculatePolygonPoints(sides, radius, cx, cy) {
+    let points = [];
+    for (let i = 0; i < sides; i++) {
+      // Rotar -PI/2 para que el primer vértice esté arriba
+      let angle = (i * 2 * Math.PI / sides) - (Math.PI / 2);
+      let x = cx + radius * Math.cos(angle);
+      let y = cy + radius * Math.sin(angle);
+      points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    return points.join(' ');
+  }
+
+  function updatePolygonPreview() {
+    const polygonPath = document.getElementById('polygon-shape-path');
+    const sidesDisplay = document.getElementById('polygon-sides-display');
+    const previewCaption = document.getElementById('preview-caption');
+    const badge = document.getElementById('polygon-badge');
+    const statusLabel = document.getElementById('selected-label');
+
+    const points = calculatePolygonPoints(currentSides, 36, 50, 50);
+    polygonPath.setAttribute('points', points);
+    polygonPath.setAttribute('stroke-width', currentStroke);
+    polygonPath.setAttribute('fill', currentFill);
+    polygonPath.setAttribute('stroke', currentStrokeColor);
+
+    sidesDisplay.textContent = currentSides;
+    previewCaption.textContent = `${currentSides} lados`;
+
+    const name = polygonNames[currentSides] || `Polígono de ${currentSides} lados`;
+    badge.textContent = `${name} (${currentSides}L)`;
+    activeShapeName = `${name} (${currentSides}L)`;
+    statusLabel.textContent = activeShapeName;
+
+    // Resaltar preset activo si existe
+    document.querySelectorAll('.side-preset').forEach(btn => {
+      const isMatch = btn.textContent.trim() === `${currentSides}L`;
+      if (isMatch) {
+        btn.classList.add('bg-primary', 'text-on-primary');
+        btn.classList.remove('bg-surface-container', 'text-on-surface');
+      } else {
+        btn.classList.remove('bg-primary', 'text-on-primary');
+        btn.classList.add('bg-surface-container', 'text-on-surface');
+      }
+    });
+  }
+
+  function adjustSides(delta) {
+    const newSides = currentSides + delta;
+    if (newSides >= 3 && newSides <= 12) {
+      currentSides = newSides;
+      updatePolygonPreview();
+    }
+  }
+
+  function setSides(num) {
+    currentSides = num;
+    updatePolygonPreview();
+  }
+
+  function setStroke(val) {
+    currentStroke = val;
+    document.getElementById('stroke-val').textContent = `${val} pt`;
+    
+    document.querySelectorAll('.stroke-btn').forEach(btn => {
+      if (btn.textContent.includes(`${val}pt`)) {
+        btn.classList.add('bg-primary', 'text-on-primary');
+        btn.classList.remove('bg-surface-container', 'text-on-surface');
+      } else {
+        btn.classList.remove('bg-primary', 'text-on-primary');
+        btn.classList.add('bg-surface-container', 'text-on-surface');
+      }
+    });
+
+    updatePolygonPreview();
+  }
+
+  function setFillColor(fill, stroke) {
+    currentFill = fill;
+    currentStrokeColor = stroke;
+    updatePolygonPreview();
+  }
+
+  function selectShape(id, name) {
+    activeShapeName = name;
+    document.getElementById('selected-label').textContent = activeShapeName;
+
+    // Feedback visual en botones
+    document.querySelectorAll('.shape-btn').forEach(b => {
+      b.classList.remove('bg-primary-fixed', 'text-primary');
+      b.classList.add('bg-surface-container-low', 'text-on-surface');
+    });
+    
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('bg-primary-fixed', 'text-primary');
+      event.currentTarget.classList.remove('bg-surface-container-low');
+    }
+
+    showToast(`Seleccionado: ${name}`);
+  }
+
+  function switchCategory(cat) {
+    document.querySelectorAll('.cat-pill').forEach(btn => {
+      btn.classList.remove('bg-primary', 'text-on-primary');
+      btn.classList.add('bg-transparent', 'text-on-surface-variant');
+    });
+
+    const activeBtn = document.getElementById(`tab-${cat}`);
+    if (activeBtn) {
+      activeBtn.classList.add('bg-primary', 'text-on-primary');
+      activeBtn.classList.remove('bg-transparent', 'text-on-surface-variant');
+    }
+
+    // Scroll contextual hacia la sección correspondiente
+    if (cat === 'shapes') {
+      document.getElementById('section-basic')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (cat === 'polygons') {
+      document.getElementById('section-polygons')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (cat === 'media') {
+      document.getElementById('section-media')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function triggerClipboardAction() {
+    activeShapeName = 'Imagen desde Portapapeles';
+    document.getElementById('selected-label').textContent = activeShapeName;
+    showToast('Imagen del portapapeles leída');
+  }
+
+  function triggerUploadAction() {
+    activeShapeName = 'Archivo Gráfico Externo';
+    document.getElementById('selected-label').textContent = activeShapeName;
+    showToast('Selector de archivos abierto');
+  }
+
+  function cancelSelection() {
+    showToast('Selección restablecida');
+    currentSides = 6;
+    updatePolygonPreview();
+  }
+
+  function insertResourceToDoc() {
+    const btn = document.getElementById('insert-action-btn');
+    btn.classList.add('scale-95');
+    setTimeout(() => btn.classList.remove('scale-95'), 120);
+
+    showToast(`Insertado "${activeShapeName}" en lienzo PDF`);
+  }
+
+  let toastTimer;
+  function showToast(text) {
+    const toast = document.getElementById('toast-feedback');
+    const toastText = document.getElementById('toast-text');
+    toastText.textContent = text;
+    
+    toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+    toast.classList.add('opacity-100', 'translate-y-0');
+
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      hideToast();
+    }, 2800);
+  }
+
+  function hideToast() {
+    const toast = document.getElementById('toast-feedback');
+    toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+    toast.classList.remove('opacity-100', 'translate-y-0');
+  }
+
+  // Inicializar estado del polígono regular
+  document.addEventListener('DOMContentLoaded', () => {
+    updatePolygonPreview();
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.05)]" data-active-classes="text-primary font-bold"><div class="flex justify-around items-center h-16 px-space-xs"><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] py-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="editor" href="#"><span class="material-symbols-outlined text-[24px]">edit_document</span><span class="font-label-sm text-label-sm">Editor</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] py-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="herramientas" href="#"><span class="material-symbols-outlined text-[24px]">build_circle</span><span class="font-label-sm text-label-sm">Herramientas</span></a><a aria-current="page" class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] py-1 transition-colors text-primary font-bold" data-path="recursos" href="#"><span class="material-symbols-outlined text-[24px]">category</span><span class="font-label-sm text-label-sm">Recursos</span></a><a class="flex flex-col items-center justify-center gap-0.5 min-w-[56px] min-h-[44px] py-1 text-on-surface-variant hover:text-on-surface transition-colors" data-path="documentos" href="#"><span class="material-symbols-outlined text-[24px]">folder_open</span><span class="font-label-sm text-label-sm">Documentos</span></a></div></nav></body></html>

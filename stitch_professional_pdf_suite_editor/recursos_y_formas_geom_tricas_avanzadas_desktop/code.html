@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "surface-variant": "#dae2fd",
+          "surface-container-low": "#f2f3ff",
+          "on-primary": "#ffffff",
+          "surface-dim": "#d2d9f4",
+          "surface-container-highest": "#dae2fd",
+          "inverse-primary": "#b4c5ff",
+          "error": "#ba1a1a",
+          "on-tertiary-container": "#ffecec",
+          "on-secondary-container": "#684000",
+          "secondary-container": "#fea619",
+          "on-surface-variant": "#434655",
+          "on-secondary-fixed-variant": "#653e00",
+          "primary-container": "#2563eb",
+          "surface-tint": "#0053db",
+          "surface-container": "#eaedff",
+          "on-primary-fixed": "#00174b",
+          "primary-fixed-dim": "#b4c5ff",
+          "on-surface": "#131b2e",
+          "on-tertiary": "#ffffff",
+          "on-secondary": "#ffffff",
+          "secondary": "#855300",
+          "tertiary-container": "#d22348",
+          "primary": "#004ac6",
+          "outline": "#737686",
+          "on-error": "#ffffff",
+          "secondary-fixed-dim": "#ffb95f",
+          "on-secondary-fixed": "#2a1700",
+          "on-tertiary-fixed": "#40000d",
+          "on-primary-container": "#eeefff",
+          "secondary-fixed": "#ffddb8",
+          "primary-fixed": "#dbe1ff",
+          "tertiary-fixed-dim": "#ffb2b7",
+          "on-background": "#131b2e",
+          "surface-container-high": "#e2e7ff",
+          "inverse-on-surface": "#eef0ff",
+          "inverse-surface": "#283044",
+          "background": "#faf8ff",
+          "surface-container-lowest": "#ffffff",
+          "on-primary-fixed-variant": "#003ea8",
+          "tertiary-fixed": "#ffdadb",
+          "tertiary": "#ad0033",
+          "on-error-container": "#93000a",
+          "surface-bright": "#faf8ff",
+          "surface": "#faf8ff",
+          "error-container": "#ffdad6",
+          "on-tertiary-fixed-variant": "#92002a",
+          "outline-variant": "#c3c6d7"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "space-md": "0.75rem",
+          "margin-desktop": "1.5rem",
+          "space-xl": "1.5rem",
+          "margin": "1rem",
+          "space-lg": "1rem",
+          "gutter": "0.75rem",
+          "margin-mobile": "0.75rem",
+          "space-sm": "0.5rem",
+          "gutter-desktop": "1.25rem",
+          "space-xs": "0.25rem"
+        },
+        "fontFamily": {
+          "body-lg": [
+            "Inter"
+          ],
+          "label-sm": [
+            "Inter"
+          ],
+          "headline-lg-mobile": [
+            "Plus Jakarta Sans"
+          ],
+          "body-md": [
+            "Inter"
+          ],
+          "headline-md": [
+            "Plus Jakarta Sans"
+          ],
+          "headline-sm": [
+            "Plus Jakarta Sans"
+          ],
+          "label-lg": [
+            "Inter"
+          ],
+          "body-sm": [
+            "Inter"
+          ],
+          "label-md": [
+            "Inter"
+          ],
+          "headline-lg": [
+            "Plus Jakarta Sans"
+          ]
+        },
+        "fontSize": {
+          "body-lg": [
+            "16px",
+            {
+              "lineHeight": "26px",
+              "fontWeight": "400"
+            }
+          ],
+          "label-sm": [
+            "10px",
+            {
+              "lineHeight": "14px",
+              "fontWeight": "600"
+            }
+          ],
+          "headline-lg-mobile": [
+            "24px",
+            {
+              "lineHeight": "32px",
+              "fontWeight": "700"
+            }
+          ],
+          "body-md": [
+            "14px",
+            {
+              "lineHeight": "22px",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-md": [
+            "20px",
+            {
+              "lineHeight": "28px",
+              "fontWeight": "600"
+            }
+          ],
+          "headline-sm": [
+            "16px",
+            {
+              "lineHeight": "24px",
+              "fontWeight": "600"
+            }
+          ],
+          "label-lg": [
+            "13px",
+            {
+              "lineHeight": "18px",
+              "fontWeight": "600"
+            }
+          ],
+          "body-sm": [
+            "12px",
+            {
+              "lineHeight": "18px",
+              "fontWeight": "400"
+            }
+          ],
+          "label-md": [
+            "11px",
+            {
+              "lineHeight": "16px",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-lg": [
+            "30px",
+            {
+              "lineHeight": "38px",
+              "fontWeight": "700"
+            }
+          ]
+        }
+      },
+    },
+  }</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-14 bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col items-center py-space-md justify-between"><div class="flex flex-col items-center gap-space-sm"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[20px]">picture_as_pdf</span></div><div class="h-[1px] w-6 bg-outline-variant my-space-xs"></div><button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Miniaturas de Página"><span class="material-symbols-outlined text-[20px]">auto_stories</span></button><button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Estructura y Marcadores"><span class="material-symbols-outlined text-[20px]">bookmark</span></button><button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Anotaciones y Capas"><span class="material-symbols-outlined text-[20px]">layers</span></button><button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Búsqueda en Documento"><span class="material-symbols-outlined text-[20px]">search</span></button></div><div class="flex flex-col items-center gap-space-sm"><button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Configuración de Inspector"><span class="material-symbols-outlined text-[20px]">tune</span></button><button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Diagnóstico y Validación PDF/A"><span class="material-symbols-outlined text-[20px]">verified</span></button></div></aside><div class="pl-14"><header class="fixed top-0 left-14 right-0 h-24 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex flex-col justify-between px-gutter-desktop"><div class="h-14 flex items-center justify-between"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-primary tracking-tight font-bold">DocuCraft</span><span class="font-label-md text-label-md bg-surface-container-high text-on-surface px-space-xs py-0.5 rounded">STUDIO</span></div><div class="h-4 w-[1px] bg-outline-variant"></div><div class="flex items-center gap-space-sm"><span class="font-label-lg text-label-lg text-on-surface truncate max-w-xs md:max-w-md">Contrato_Prestacion_Servicios_v3.pdf</span><span class="font-body-sm text-body-sm text-on-surface-variant">- Guardado en la nube</span><span class="font-label-sm text-label-sm bg-surface-container-high text-primary px-space-sm py-0.5 rounded-full font-semibold">PDF/A Editable</span></div></div><div class="flex items-center gap-space-sm"><div class="flex items-center gap-space-xs bg-surface-container-low px-space-sm py-1 rounded-lg"><button class="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Deshacer (Ctrl+Z)"><span class="material-symbols-outlined text-[18px]">undo</span></button><button class="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Rehacer (Ctrl+Y)"><span class="material-symbols-outlined text-[18px]">redo</span></button><div class="h-3 w-[1px] bg-outline-variant mx-1"></div><button class="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Guardar"><span class="material-symbols-outlined text-[18px]">save</span></button><button class="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Imprimir"><span class="material-symbols-outlined text-[18px]">print</span></button><button class="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Compartir enlace"><span class="material-symbols-outlined text-[18px]">share</span></button><div class="h-3 w-[1px] bg-outline-variant mx-1"></div><button class="p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded" title="Alternar Tema Claro/Oscuro"><span class="material-symbols-outlined text-[18px]">light_mode</span></button><div class="flex items-center gap-1 text-on-surface-variant px-1" title="Sincronizado con la nube"><span class="material-symbols-outlined text-[16px] text-primary">cloud_done</span></div></div><button class="flex items-center gap-space-xs bg-primary hover:bg-primary-container text-on-primary px-space-md py-1.5 rounded-lg font-label-lg text-label-lg transition-all shadow-sm"><span class="material-symbols-outlined text-[18px]">ios_share</span><span>Exportar / Convertir</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface" title="Notificaciones"><span class="material-symbols-outlined text-[20px]">notifications</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><div class="h-10 flex items-center justify-between"><nav class="flex items-center gap-space-xs overflow-x-auto" data-active-classes="bg-surface-container-high text-primary font-bold rounded-lg"><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="archivo" href="#">Archivo</a><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="inicio" href="#">Inicio</a><a aria-current="page" class="px-space-md py-1 transition-colors whitespace-nowrap bg-surface-container-high text-primary font-bold rounded-lg" data-path="insertar" href="#">Insertar</a><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="disposicion-formato" href="#">Disposición / Formato</a><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="herramientas-pdf" href="#">Herramientas PDF</a><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="revisar" href="#">Revisar</a><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="ver" href="#">Ver</a><a class="font-label-lg text-label-lg px-space-md py-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg transition-colors whitespace-nowrap" data-path="ayuda" href="#">Ayuda</a></nav><div class="flex items-center gap-space-md"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Página 1 de 14</span><div class="flex items-center gap-space-xs text-on-surface-variant"><button class="p-1 hover:text-on-surface" title="Reducir zoom"><span class="material-symbols-outlined text-[16px]">remove</span></button><span class="font-label-md text-label-md text-on-surface font-semibold">100%</span><button class="p-1 hover:text-on-surface" title="Aumentar zoom"><span class="material-symbols-outlined text-[16px]">add</span></button></div></div></div></header><main class="relative pt-24 bg-surface-container-low min-h-screen"><div class="flex flex-col w-full">
+<!-- Ribbon Superior Contextual: Pestaña 'Insertar' Activa -->
+<div class="w-full bg-surface-container-lowest shadow-sm px-gutter-desktop py-space-sm flex flex-col gap-space-xs z-30">
+<div class="flex items-center gap-space-lg overflow-x-auto pb-0.5">
+<!-- Grupo: Páginas -->
+<div class="flex flex-col items-center gap-1 pr-space-md bg-surface-container-low/50 px-space-sm py-1 rounded-lg">
+<div class="flex items-center gap-1">
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Añadir portada normalizada">
+<span class="material-symbols-outlined text-[20px] text-primary">auto_stories</span>
+<span class="font-label-sm text-label-sm mt-0.5">Portada</span>
+</button>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Salto de página estricto">
+<span class="material-symbols-outlined text-[20px]">note_add</span>
+<span class="font-label-sm text-label-sm mt-0.5">Salto Pág.</span>
+</button>
+</div>
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-outline">Páginas</span>
+</div>
+<!-- Separador visual sutil -->
+<div class="h-10 w-0.5 bg-surface-container-high self-center rounded-full"></div>
+<!-- Grupo: Tablas -->
+<div class="flex flex-col items-center gap-1 pr-space-md bg-surface-container-low/50 px-space-sm py-1 rounded-lg">
+<div class="flex items-center gap-1">
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Matriz y cuadrícula dinámica">
+<span class="material-symbols-outlined text-[20px]">grid_on</span>
+<span class="font-label-sm text-label-sm mt-0.5">Matriz</span>
+</button>
+</div>
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-outline">Tablas</span>
+</div>
+<!-- Separador visual -->
+<div class="h-10 w-0.5 bg-surface-container-high self-center rounded-full"></div>
+<!-- Grupo: Ilustraciones & Vectores (SECCIÓN CLAVE ACTIVA) -->
+<div class="flex flex-col items-center gap-1 bg-surface-container px-space-md py-1 rounded-xl shadow-[0_1px_4px_rgba(0,0,0,0.03)]">
+<div class="flex items-center gap-1.5">
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Cargar archivo multimedia">
+<span class="material-symbols-outlined text-[20px]">image</span>
+<span class="font-label-sm text-label-sm mt-0.5">Imágenes</span>
+</button>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Pegar imagen del búfer de sistema (Ctrl+V)">
+<span class="material-symbols-outlined text-[20px]">content_paste</span>
+<span class="font-label-sm text-label-sm mt-0.5">Pegar</span>
+</button>
+<!-- Herramienta activa Formas y Polígonos -->
+<div class="flex flex-col items-center justify-center px-3 py-1.5 rounded-lg bg-primary text-on-primary shadow-sm relative group cursor-pointer">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]">pentagon</span>
+<span class="font-label-sm text-label-sm font-bold">Formas y Polígonos</span>
+</div>
+<span class="absolute -top-1.5 -right-1 bg-secondary-container text-on-secondary-container font-label-sm text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase shadow-xs">Activo</span>
+</div>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Biblioteca vectorial">
+<span class="material-symbols-outlined text-[20px]">category</span>
+<span class="font-label-sm text-label-sm mt-0.5">Iconos</span>
+</button>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Diagramas de barras y flujos">
+<span class="material-symbols-outlined text-[20px]">bar_chart</span>
+<span class="font-label-sm text-label-sm mt-0.5">Gráficos</span>
+</button>
+</div>
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-primary font-bold">Ilustraciones y Modelado</span>
+</div>
+<!-- Separador visual -->
+<div class="h-10 w-0.5 bg-surface-container-high self-center rounded-full"></div>
+<!-- Grupo: Vínculos & Comentarios -->
+<div class="flex flex-col items-center gap-1 bg-surface-container-low/50 px-space-sm py-1 rounded-lg">
+<div class="flex items-center gap-1">
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">link</span>
+<span class="font-label-sm text-label-sm mt-0.5">Vínculos</span>
+</button>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">add_comment</span>
+<span class="font-label-sm text-label-sm mt-0.5">Comentarios</span>
+</button>
+</div>
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-outline">Interacción</span>
+</div>
+<!-- Separador visual -->
+<div class="h-10 w-0.5 bg-surface-container-high self-center rounded-full"></div>
+<!-- Grupo: Tipografía y Símbolos -->
+<div class="flex flex-col items-center gap-1 bg-surface-container-low/50 px-space-sm py-1 rounded-lg">
+<div class="flex items-center gap-1">
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">title</span>
+<span class="font-label-sm text-label-sm mt-0.5">Encabezado</span>
+</button>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">text_fields</span>
+<span class="font-label-sm text-label-sm mt-0.5">Texto</span>
+</button>
+<button class="flex flex-col items-center justify-center p-1.5 rounded-lg hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[20px]">functions</span>
+<span class="font-label-sm text-label-sm mt-0.5">Símbolos</span>
+</button>
+</div>
+<span class="font-label-sm text-[9px] uppercase tracking-wider text-outline">Estructura</span>
+</div>
+</div>
+</div>
+<!-- Escenario de Trabajo Principal (A4 Paper Stage con Paleta Flotante DocuCraft) -->
+<div class="relative w-full flex-1 px-gutter-desktop py-space-xl flex justify-center items-start overflow-hidden">
+<!-- Lienzo Fondo A4 (Papel de Documento en Proceso de Edición) -->
+<div class="relative w-[794px] min-h-[1080px] bg-surface-container-lowest rounded-sm shadow-[0_4px_20px_rgba(19,27,46,0.08)] px-16 py-20 flex flex-col justify-between select-none pointer-events-none opacity-40">
+<div class="flex flex-col gap-6">
+<div class="flex items-center justify-between pb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<div>
+<p class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">ACUERDO MARCO DE PRESTACIÓN TECNOLÓGICA</p>
+<p class="font-label-sm text-label-sm text-outline">EXPEDIENTE CORP-2025-089A • ANEXO VINCULANTE</p>
+</div>
+</div>
+<span class="font-label-md text-label-md text-outline">Pág. 1 / 14</span>
+</div>
+<div class="h-1 bg-surface-container-high rounded-full w-full"></div>
+<div class="space-y-3 pt-4">
+<div class="h-4 bg-surface-container-low rounded-md w-11/12"></div>
+<div class="h-4 bg-surface-container-low rounded-md w-full"></div>
+<div class="h-4 bg-surface-container-low rounded-md w-4/5"></div>
+<div class="h-4 bg-surface-container-low rounded-md w-10/12"></div>
+</div>
+<!-- Renderizado de Diagrama en Documento con Selección Vectorial Activa -->
+<div class="mt-8 p-6 bg-surface-container-low/40 rounded-xl flex items-center justify-center gap-10">
+<svg class="drop-shadow-sm" height="120" viewbox="0 0 100 100" width="120">
+<polygon fill="#eaedff" points="50,5 95,25 95,75 50,95 5,75 5,25" stroke="#004ac6" stroke-width="2.5"></polygon>
+<circle cx="50" cy="5" fill="#004ac6" r="4"></circle>
+<circle cx="95" cy="25" fill="#004ac6" r="4"></circle>
+<circle cx="95" cy="75" fill="#004ac6" r="4"></circle>
+<circle cx="50" cy="95" fill="#004ac6" r="4"></circle>
+<circle cx="5,75" fill="#004ac6" r="4"></circle>
+<circle cx="5,25" fill="#004ac6" r="4"></circle>
+</svg>
+<div class="space-y-2 max-w-xs">
+<div class="h-3 bg-surface-container-high rounded w-3/4"></div>
+<div class="h-3 bg-surface-container-high rounded w-1/2"></div>
+<div class="h-2 bg-surface-container rounded w-full"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-outline font-label-sm text-label-sm pt-8">
+<span>Confidencial • Solo para uso interno homologado</span>
+<span>Revisión v3.2.1-DIN</span>
+</div>
+</div>
+<!-- MODAL / PALETA FLOTANTE STUDIO: CATÁLOGO VECTORIAL & GENERADOR POLIGONAL -->
+<div class="absolute top-4 w-full max-w-5xl bg-surface-container-lowest/95 backdrop-blur-xl rounded-xl shadow-[0_20px_40px_-10px_rgba(19,27,46,0.18)] z-40 overflow-hidden flex flex-col max-h-[calc(100vh-140px)]">
+<!-- Cabecera del Panel Modal de Diseño -->
+<div class="px-space-xl py-space-md bg-surface-container-high/60 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[18px]">polyline</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">Catálogo de Formas Geométricas y Recursos Vectoriales</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Modelado paramétrico de polígonos regulares DIN, primitivas 2D e inyección multimedia</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-highest text-primary font-semibold">Motor Cairo/PDF 2.0</span>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" title="Cerrar catálogo">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+</div>
+<!-- Barra de Pestañas del Catálogo -->
+<div class="flex items-center gap-2 px-space-xl pt-3 pb-2 bg-surface-container-low/70 overflow-x-auto">
+<button class="studio-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary font-bold shadow-xs text-label-lg font-label-lg transition-all" id="tab-btn-n-sides" onclick="switchStudioTab('tab-n-sides', this)">
+<span class="material-symbols-outlined text-[18px]">hexagon</span>
+<span>Generador N-Lados (Polígonos Convexos)</span>
+<span class="bg-primary-container text-on-primary text-[10px] px-1.5 py-0.2 rounded-full font-bold">Interactivo</span>
+</button>
+<button class="studio-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all text-label-lg font-label-lg" id="tab-btn-basics" onclick="switchStudioTab('tab-basics', this)">
+<span class="material-symbols-outlined text-[18px]">square</span>
+<span>Formas Básicas</span>
+</button>
+<button class="studio-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all text-label-lg font-label-lg" id="tab-btn-connectors" onclick="switchStudioTab('tab-connectors', this)">
+<span class="material-symbols-outlined text-[18px]">turn_sharp_right</span>
+<span>Polígonos y Conectores</span>
+</button>
+<button class="studio-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all text-label-lg font-label-lg" id="tab-btn-media" onclick="switchStudioTab('tab-media', this)">
+<span class="material-symbols-outlined text-[18px]">perm_media</span>
+<span>Multimedia y Pegar</span>
+</button>
+</div>
+<!-- Contenedor con Scroll de Paneles de Contenido -->
+<div class="overflow-y-auto p-space-xl flex flex-col gap-space-xl flex-1 bg-surface-container-lowest">
+<!-- SECCIÓN 3: GENERADOR INTERACTIVO DE POLÍGONOS REGULARES DE N-LADOS -->
+<div class="studio-panel-content flex flex-col gap-space-lg" id="tab-n-sides">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-primary uppercase font-bold tracking-wider">Cálculo Trigonométrico &amp; Vectorial</span>
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">Generador Paramétrico de Polígonos Regulares</h3>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md text-on-surface-variant">Preset rápido:</span>
+<div class="flex items-center gap-1 bg-surface-container-high/60 p-1 rounded-lg">
+<button class="px-2 py-1 rounded text-label-sm font-label-sm hover:bg-surface-container-lowest text-on-surface transition-colors" onclick="setPolygonSides(5)">5L</button>
+<button class="px-2 py-1 rounded bg-primary text-on-primary text-label-sm font-label-sm font-bold shadow-xs" onclick="setPolygonSides(6)">6L Hexágono</button>
+<button class="px-2 py-1 rounded text-label-sm font-label-sm hover:bg-surface-container-lowest text-on-surface transition-colors" onclick="setPolygonSides(7)">7L</button>
+<button class="px-2 py-1 rounded text-label-sm font-label-sm hover:bg-surface-container-lowest text-on-surface transition-colors" onclick="setPolygonSides(8)">8L</button>
+<button class="px-2 py-1 rounded text-label-sm font-label-sm hover:bg-surface-container-lowest text-on-surface transition-colors" onclick="setPolygonSides(10)">10L</button>
+<button class="px-2 py-1 rounded text-label-sm font-label-sm hover:bg-surface-container-lowest text-on-surface transition-colors" onclick="setPolygonSides(12)">12L</button>
+</div>
+</div>
+</div>
+<!-- Cuadrícula Split: Configuración a la izquierda, Canvas Previsualización a la derecha -->
+<div class="grid grid-cols-12 gap-space-xl items-start">
+<!-- Columna Izquierda: Parámetros Numéricos, Lados, Trazos y Rellenos -->
+<div class="col-span-7 flex flex-col gap-space-md">
+<!-- Ajuste de Número de Lados (Stepper + Input) -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">interests</span>
+<span>Cantidad de Lados (N)</span>
+</label>
+<span class="font-label-sm text-label-sm text-outline">Rango permitido: 3 - 32 vértices</span>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center bg-surface-container-lowest rounded-lg shadow-sm px-2 py-1">
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors" onclick="adjustPolygonSides(-1)" title="Disminuir vértice">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<input class="w-12 text-center font-headline-sm text-headline-sm text-primary font-bold bg-transparent outline-none select-none" id="polygon-sides-input" readonly="" type="text" value="6"/>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors" onclick="adjustPolygonSides(1)" title="Aumentar vértice">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<!-- Métricas Calculadas en Tiempo Real -->
+<div class="flex-1 grid grid-cols-2 gap-2 bg-surface-container-highest/60 p-2.5 rounded-lg">
+<div>
+<span class="block font-label-sm text-[10px] text-on-surface-variant uppercase">Ángulo Interior:</span>
+<span class="font-label-lg text-label-lg text-on-surface font-bold" id="calc-interior-angle">120.00°</span>
+</div>
+<div>
+<span class="block font-label-sm text-[10px] text-on-surface-variant uppercase">Suma de Ángulos:</span>
+<span class="font-label-lg text-label-lg text-on-surface font-bold" id="calc-total-angle">720°</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Atributos de Trazo y Grosor -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex flex-col gap-space-sm">
+<span class="font-label-lg text-label-lg font-semibold text-on-surface">Configuración de Trazo Vectorial</span>
+<div class="grid grid-cols-2 gap-space-md">
+<!-- Grosor del Trazo -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Grosor de Línea (pt)</label>
+<div class="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg">
+<button class="stroke-w-btn px-2.5 py-1 text-label-sm font-label-sm rounded hover:bg-surface-container text-on-surface" onclick="setStrokeWidth(1)">1pt</button>
+<button class="stroke-w-btn px-2.5 py-1 text-label-sm font-label-sm rounded bg-primary text-on-primary font-bold shadow-xs" onclick="setStrokeWidth(2)">2pt</button>
+<button class="stroke-w-btn px-2.5 py-1 text-label-sm font-label-sm rounded hover:bg-surface-container text-on-surface" onclick="setStrokeWidth(3)">3pt</button>
+<button class="stroke-w-btn px-2.5 py-1 text-label-sm font-label-sm rounded hover:bg-surface-container text-on-surface" onclick="setStrokeWidth(5)">5pt</button>
+</div>
+</div>
+<!-- Estilo de Borde -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Estilo de Línea</label>
+<div class="flex items-center gap-1 bg-surface-container-lowest p-1 rounded-lg">
+<button class="stroke-style-btn px-2.5 py-1 text-label-sm font-label-sm rounded bg-primary text-on-primary font-bold shadow-xs" onclick="setStrokeDash('none')">Sólido</button>
+<button class="stroke-style-btn px-2.5 py-1 text-label-sm font-label-sm rounded hover:bg-surface-container text-on-surface" onclick="setStrokeDash('6,4')">Líneas</button>
+<button class="stroke-style-btn px-2.5 py-1 text-label-sm font-label-sm rounded hover:bg-surface-container text-on-surface" onclick="setStrokeDash('2,3')">Punteado</button>
+</div>
+</div>
+</div>
+<!-- Paleta de Relleno y Contorno -->
+<div class="pt-2 grid grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Color de Contorno</span>
+<div class="flex items-center gap-2">
+<button class="w-6 h-6 rounded-full bg-[#004ac6] ring-2 ring-offset-2 ring-primary transition-all" onclick="setStrokeColor('#004ac6')"></button>
+<button class="w-6 h-6 rounded-full bg-[#131b2e] hover:scale-110 transition-transform" onclick="setStrokeColor('#131b2e')"></button>
+<button class="w-6 h-6 rounded-full bg-[#ad0033] hover:scale-110 transition-transform" onclick="setStrokeColor('#ad0033')"></button>
+<button class="w-6 h-6 rounded-full bg-[#855300] hover:scale-110 transition-transform" onclick="setStrokeColor('#855300')"></button>
+<button class="w-6 h-6 rounded-full bg-[#737686] hover:scale-110 transition-transform" onclick="setStrokeColor('#737686')"></button>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Color de Relleno</span>
+<div class="flex items-center gap-2">
+<button class="w-6 h-6 rounded-full bg-[#eaedff] ring-2 ring-offset-2 ring-primary transition-all" onclick="setFillColor('#eaedff')"></button>
+<button class="w-6 h-6 rounded-full bg-white shadow-xs hover:scale-110 transition-transform" onclick="setFillColor('#ffffff')"></button>
+<button class="w-6 h-6 rounded-full bg-[#ffdadb] hover:scale-110 transition-transform" onclick="setFillColor('#ffdadb')"></button>
+<button class="w-6 h-6 rounded-full bg-[#ffddb8] hover:scale-110 transition-transform" onclick="setFillColor('#ffddb8')"></button>
+<button class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-outline text-[12px] hover:scale-110 transition-transform" onclick="setFillColor('none')" title="Sin relleno">∅</button>
+</div>
+</div>
+</div>
+</div>
+<!-- CTA de Inserción en Lienzo -->
+<div class="flex items-center gap-space-md pt-2">
+<button class="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-container text-on-primary py-2.5 px-space-lg rounded-xl font-label-lg text-label-lg shadow-sm hover:shadow transition-all active:scale-[0.99]" onclick="triggerPolygonInsert()">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Insertar en Documento (o presiona Enter)</span>
+</button>
+<button class="p-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors" title="Exportar como SVG independiente">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+</button>
+</div>
+</div>
+<!-- Columna Derecha: Vista Previa Matemática SVG en Tiempo Real -->
+<div class="col-span-5 flex flex-col gap-space-sm">
+<div class="w-full h-[320px] bg-surface-container-low rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden">
+<!-- Retícula milimétrica de fondo (SVG sutil) -->
+<svg class="absolute inset-0 w-full h-full opacity-30 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="20" id="grid" patternunits="userSpaceOnUse" width="20">
+<path d="M 20 0 L 0 0 0 20" fill="none" stroke="#737686" stroke-width="0.5"></path>
+</pattern>
+</defs>
+<rect fill="url(#grid)" height="100%" width="100%"></rect>
+</svg>
+<!-- Canvas de renderizado SVG del polígono generado -->
+<div class="relative z-10 w-56 h-56 flex items-center justify-center">
+<svg class="drop-shadow-md transition-all duration-200" height="220" id="preview-polygon-svg" viewbox="0 0 220 220" width="220">
+<!-- Los puntos y vértices se regeneran dinámicamente mediante JS -->
+<polygon fill="#eaedff" id="svg-poly-shape" points="110,20 187,65 187,155 110,200 33,155 33,65" stroke="#004ac6" stroke-dasharray="none" stroke-width="3"></polygon>
+<g id="svg-poly-vertices">
+<circle cx="110" cy="20" fill="#004ac6" r="4.5" stroke="#ffffff" stroke-width="1.5"></circle>
+<circle cx="187" cy="65" fill="#004ac6" r="4.5" stroke="#ffffff" stroke-width="1.5"></circle>
+<circle cx="187" cy="155" fill="#004ac6" r="4.5" stroke="#ffffff" stroke-width="1.5"></circle>
+<circle cx="110" cy="200" fill="#004ac6" r="4.5" stroke="#ffffff" stroke-width="1.5"></circle>
+<circle cx="33" cy="155" fill="#004ac6" r="4.5" stroke="#ffffff" stroke-width="1.5"></circle>
+<circle cx="33" cy="65" fill="#004ac6" r="4.5" stroke="#ffffff" stroke-width="1.5"></circle>
+</g>
+</svg>
+</div>
+<!-- Tag flotante con coordenadas centro e isometría -->
+<div class="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[11px] font-label-sm text-outline">
+<span>Radio R: 90px • Centro (110, 110)</span>
+<span class="font-bold text-primary" id="poly-name-badge">HEXÁGONO REGULAR (6V)</span>
+</div>
+</div>
+<!-- Barra de ayuda técnica rápida -->
+<div class="p-2.5 bg-surface-container rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Conforme a norma ISO 32000-2: Contorno vectorial sin rasterización con escalado infinito.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- SECCIÓN 1: FORMAS BÁSICAS (GRID DINÁMICO) -->
+<div class="studio-panel-content flex flex-col gap-space-md hidden" id="tab-basics">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Primitivas Geométricas Bidimensionales</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">6 primitivas de trazado directo</span>
+</div>
+<div class="grid grid-cols-6 gap-space-md">
+<!-- Rectángulo -->
+<button class="group p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col items-center justify-center gap-2 transition-all" onclick="selectQuickShape('Rectángulo')">
+<svg height="40" viewbox="0 0 60 40" width="60">
+<rect class="group-hover:fill-primary-fixed transition-colors" fill="#eaedff" height="36" stroke="#004ac6" stroke-width="2" width="56" x="2" y="2"></rect>
+</svg>
+<span class="font-label-md text-label-md text-on-surface font-medium">Rectángulo</span>
+</button>
+<!-- Rectángulo Redondeado -->
+<button class="group p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col items-center justify-center gap-2 transition-all" onclick="selectQuickShape('Rectángulo Redondeado')">
+<svg height="40" viewbox="0 0 60 40" width="60">
+<rect class="group-hover:fill-primary-fixed transition-colors" fill="#eaedff" height="36" rx="8" stroke="#004ac6" stroke-width="2" width="56" x="2" y="2"></rect>
+</svg>
+<span class="font-label-md text-label-md text-on-surface font-medium">Esquinas Curvas</span>
+</button>
+<!-- Círculo Perfecto -->
+<button class="group p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col items-center justify-center gap-2 transition-all" onclick="selectQuickShape('Círculo')">
+<svg height="40" viewbox="0 0 60 40" width="60">
+<circle class="group-hover:fill-primary-fixed transition-colors" cx="30" cy="20" fill="#eaedff" r="18" stroke="#004ac6" stroke-width="2"></circle>
+</svg>
+<span class="font-label-md text-label-md text-on-surface font-medium">Círculo</span>
+</button>
+<!-- Elipse -->
+<button class="group p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col items-center justify-center gap-2 transition-all" onclick="selectQuickShape('Elipse')">
+<svg height="40" viewbox="0 0 60 40" width="60">
+<ellipse class="group-hover:fill-primary-fixed transition-colors" cx="30" cy="20" fill="#eaedff" rx="26" ry="16" stroke="#004ac6" stroke-width="2"></ellipse>
+</svg>
+<span class="font-label-md text-label-md text-on-surface font-medium">Elipse</span>
+</button>
+<!-- Triángulo Equilátero -->
+<button class="group p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col items-center justify-center gap-2 transition-all" onclick="selectQuickShape('Triángulo Equilátero')">
+<svg height="40" viewbox="0 0 60 40" width="60">
+<polygon class="group-hover:fill-primary-fixed transition-colors" fill="#eaedff" points="30,4 56,36 4,36" stroke="#004ac6" stroke-width="2"></polygon>
+</svg>
+<span class="font-label-md text-label-md text-on-surface font-medium">Triángulo Eq.</span>
+</button>
+<!-- Triángulo Rectángulo -->
+<button class="group p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col items-center justify-center gap-2 transition-all" onclick="selectQuickShape('Triángulo Rectángulo')">
+<svg height="40" viewbox="0 0 60 40" width="60">
+<polygon class="group-hover:fill-primary-fixed transition-colors" fill="#eaedff" points="6,4 6,36 54,36" stroke="#004ac6" stroke-width="2"></polygon>
+</svg>
+<span class="font-label-md text-label-md text-on-surface font-medium">Rectángulo 90°</span>
+</button>
+</div>
+</div>
+<!-- SECCIÓN 2: POLÍGONOS DIN Y CONECTORES DE FLUJO -->
+<div class="studio-panel-content flex flex-col gap-space-md hidden" id="tab-connectors">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Polígonos de Precisión DIN &amp; Conectores de Diagrama</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Conectores ortogonales y chevrons de secuencia</span>
+</div>
+<div class="grid grid-cols-4 gap-space-md">
+<!-- Rombo -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Rombo')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="20,4 36,20 20,36 4,20" stroke="#004ac6" stroke-width="2"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Rombo / Decisión</span>
+<span class="block font-label-sm text-[10px] text-outline">Diagramas de flujo</span>
+</div>
+</button>
+<!-- Paralelogramo -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Paralelogramo')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="12,8 36,8 28,32 4,32" stroke="#004ac6" stroke-width="2"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Paralelogramo</span>
+<span class="block font-label-sm text-[10px] text-outline">Datos de entrada</span>
+</div>
+</button>
+<!-- Trapecio Simétrico -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Trapecio')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="10,8 30,8 36,32 4,32" stroke="#004ac6" stroke-width="2"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Trapecio</span>
+<span class="block font-label-sm text-[10px] text-outline">Operación manual</span>
+</div>
+</button>
+<!-- Pentágono regular -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Pentágono')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="20,4 37,16 31,34 9,34 3,16" stroke="#004ac6" stroke-width="2"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Pentágono</span>
+<span class="block font-label-sm text-[10px] text-outline">Polígono simétrico</span>
+</div>
+</button>
+<!-- Estrella de 5 Puntas -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Estrella 5P')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="20,2 25,14 38,14 27,22 31,34 20,26 9,34 13,22 2,14 15,14" stroke="#004ac6" stroke-width="1.8"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Estrella 5P</span>
+<span class="block font-label-sm text-[10px] text-outline">Distintivo / Puntuación</span>
+</div>
+</button>
+<!-- Estrella de 8 Puntas -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Estrella 8P')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="20,2 24,14 36,10 28,20 36,30 24,26 20,38 16,26 4,30 12,20 4,10 16,14" stroke="#004ac6" stroke-width="1.5"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Estrella 8P</span>
+<span class="block font-label-sm text-[10px] text-outline">Sello de certificación</span>
+</div>
+</button>
+<!-- Flecha Simple Horizontal -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Flecha Simple')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="4,16 24,16 24,10 36,20 24,30 24,24 4,24" stroke="#004ac6" stroke-width="1.8"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Flecha Simple</span>
+<span class="block font-label-sm text-[10px] text-outline">Dirección horizontal</span>
+</div>
+</button>
+<!-- Chevron de Secuencia -->
+<button class="p-3 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex items-center gap-3 transition-colors text-left" onclick="selectQuickShape('Chevron')">
+<svg class="shrink-0" height="40" viewbox="0 0 40 40" width="40">
+<polygon fill="#eaedff" points="6,6 26,6 36,20 26,34 6,34 16,20" stroke="#004ac6" stroke-width="1.8"></polygon>
+</svg>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-bold">Chevron</span>
+<span class="block font-label-sm text-[10px] text-outline">Hitos de proceso</span>
+</div>
+</button>
+</div>
+</div>
+<!-- SECCIÓN 4: ACCIONES RÁPIDAS DE IMAGEN Y PORTAPAPELES -->
+<div class="studio-panel-content flex flex-col gap-space-lg hidden" id="tab-media">
+<div class="grid grid-cols-12 gap-space-xl">
+<!-- Dropzone para Carga / Pegado -->
+<div class="col-span-8 p-space-xl bg-surface-container-low rounded-xl flex flex-col items-center justify-center text-center gap-3 hover:bg-surface-container-high/60 transition-colors cursor-pointer group">
+<div class="w-14 h-14 rounded-full bg-surface-container-highest group-hover:bg-primary group-hover:text-on-primary flex items-center justify-center text-primary transition-all">
+<span class="material-symbols-outlined text-[30px]">cloud_upload</span>
+</div>
+<div class="space-y-1">
+<p class="font-headline-sm text-headline-sm text-on-surface font-bold">Pegar imagen desde el portapapeles o arrastra aquí</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Puedes usar el atajo directo <kbd class="px-2 py-0.5 bg-surface-container rounded font-bold text-on-surface">Ctrl + V</kbd> en cualquier parte del lienzo</p>
+</div>
+<div class="flex items-center gap-2 pt-2">
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-lg text-label-lg shadow-sm hover:bg-primary-container transition-colors">
+                  Examinar archivos locales
+                </button>
+<span class="text-outline font-label-sm text-label-sm">PNG, JPG, WebP o SVG vectorial hasta 50MB</span>
+</div>
+</div>
+<!-- Recursos Multimedia & Muestras -->
+<div class="col-span-4 flex flex-col gap-3">
+<span class="font-label-lg text-label-lg font-bold text-on-surface">Recursos Recientes</span>
+<!-- Reciente 1 -->
+<div class="flex items-center gap-3 p-2 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<img class="w-12 h-12 object-cover rounded-md" data-alt="Technical architectural diagram blueprint schema with cyan grid lines on deep slate background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdiRQMjEFMDVd65BI7XQ77iSGnbk5M5nVic7SEjHi9p_1kQtU2WLnWBsZ4u9CyCLxU4P-AY3wzHa0tTASW3KQJ7Z8ACoRhKALnmBkjhtsTgG8chkidiqOW6qHyU6sVcxQRKqMyRttSSmKQBg_EBaNj03XVCalGTwBpfwTYdLJK49GA0NbOLnDhCSRlnxL6YIugiUs6i7-LpY2JCHVDIqkRiohfYlaRpeXx0C0zcU4"/>
+<div class="flex-1 min-w-0">
+<span class="block font-label-md text-label-md text-on-surface font-semibold truncate">Esquema_Arquitectura_DIN.png</span>
+<span class="block font-label-sm text-[10px] text-outline">1920x1080 • 1.4 MB</span>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">add</span></button>
+</div>
+<!-- Reciente 2 -->
+<div class="flex items-center gap-3 p-2 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<img class="w-12 h-12 object-cover rounded-md" data-alt="Corporate corporate seal watermark with geometric concentric rings and precision legal typography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAenGUiox7HiKzi1lvv9Up_0FBzTFSl47N_INYBaKtuzXxMTnI5OAQrfXhpwZnV_z8npeqPIyNOpDkCVlbI69osSBS1rKLSfFbwBYpHO_tge2TtvmJftxlTRQYnFyxEQJ3SveHb7KzhxyuINMPFYO3NiazKnzthITvUFMTonT3m7TbggTbf2zPflwf6Bq__Z2zFoHRKhEIfMOs3oRZBq1OCSy0ITxNPRwnust34AsU"/>
+<div class="flex-1 min-w-0">
+<span class="block font-label-md text-label-md text-on-surface font-semibold truncate">Sello_Notarial_Certificado.svg</span>
+<span class="block font-label-sm text-[10px] text-outline">Vectorial Nativo • 84 KB</span>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[18px]">add</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pie del Panel Modal -->
+<div class="px-space-xl py-space-sm bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm text-outline font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">info</span>
+<span>Tip: Mantén presionada la tecla Shift mientras arrastras sobre el lienzo para preservar la proporción 1:1.</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-lg text-label-lg transition-colors">Cancelar</button>
+<button class="px-4 py-1.5 rounded-lg bg-primary text-on-primary font-label-lg text-label-lg shadow-xs hover:bg-primary-container transition-colors" onclick="triggerPolygonInsert()">Aceptar y Añadir</button>
+</div>
+</div>
+</div>
+<!-- TOAST NOTIFICATION ELEGANTE (ESQUINA INFERIOR DERECHA) -->
+<div class="fixed bottom-6 right-6 bg-inverse-surface text-inverse-on-surface px-space-md py-space-sm rounded-xl shadow-xl flex items-center gap-3 z-50 transition-all duration-300 transform translate-y-0 opacity-100" id="studio-toast">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg font-bold" id="toast-title">Hexágono regular configurado</span>
+<span class="font-body-sm text-[11px] text-surface-dim" id="toast-desc">Polígono regular de 6 lados y trazo 2pt listo para inserción vectorial</span>
+</div>
+<button class="p-1 hover:text-on-primary text-outline transition-colors ml-2" onclick="hideToast()">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lógica Interactiva del Generador Paramétrico N-Lados & Microinteracciones -->
+<script>
+  let polygonState = {
+    sides: 6,
+    strokeWidth: 2,
+    strokeDash: 'none',
+    strokeColor: '#004ac6',
+    fillColor: '#eaedff'
+  };
+
+  const polyNames = {
+    3: "TRIÁNGULO EQUILÁTERO (3V)",
+    4: "CUADRADO REGULAR (4V)",
+    5: "PENTÁGONO REGULAR (5V)",
+    6: "HEXÁGONO REGULAR (6V)",
+    7: "HEPTÁGONO REGULAR (7V)",
+    8: "OCTÁGONO REGULAR (8V)",
+    9: "ENEÁGONO REGULAR (9V)",
+    10: "DECÁGONO REGULAR (10V)",
+    11: "ENDECÁGONO REGULAR (11V)",
+    12: "DODECÁGONO REGULAR (12V)",
+    16: "HEXADECÁGONO (16V)",
+    20: "ICOSÁGONO (20V)",
+    24: "TETRAICOSÁGONO (24V)",
+    32: "CIRCUNFERENCIA APROX. (32V)"
+  };
+
+  function updatePolygonMath() {
+    const n = polygonState.sides;
+    const interiorAngle = ((n - 2) * 180) / n;
+    const totalAngle = (n - 2) * 180;
+
+    document.getElementById('polygon-sides-input').value = n;
+    document.getElementById('calc-interior-angle').innerText = interiorAngle.toFixed(2) + "°";
+    document.getElementById('calc-total-angle').innerText = totalAngle + "°";
+
+    const badge = document.getElementById('poly-name-badge');
+    badge.innerText = polyNames[n] || (n + "-ÁGONO REGULAR (" + n + "V)");
+
+    // Calcular puntos poligonales paramétricos en el SVG (Centro: 110, 110, Radio: 90)
+    const cx = 110;
+    const cy = 110;
+    const r = 90;
+    let points = [];
+    let verticesHtml = '';
+
+    // Comenzamos rotado a -90 grados para que el vértice superior apunte hacia arriba
+    for (let i = 0; i < n; i++) {
+      const angle = (i * 2 * Math.PI / n) - (Math.PI / 2);
+      const x = Math.round(cx + r * Math.cos(angle));
+      const y = Math.round(cy + r * Math.sin(angle));
+      points.push(`${x},${y}`);
+      verticesHtml += `<circle cx="${x}" cy="${y}" r="4" fill="${polygonState.strokeColor}" stroke="#ffffff" stroke-width="1.5" />`;
+    }
+
+    const polyShape = document.getElementById('svg-poly-shape');
+    polyShape.setAttribute('points', points.join(' '));
+    polyShape.setAttribute('stroke-width', polygonState.strokeWidth);
+    polyShape.setAttribute('stroke', polygonState.strokeColor);
+    polyShape.setAttribute('stroke-dasharray', polygonState.strokeDash);
+    polyShape.setAttribute('fill', polygonState.fillColor);
+
+    document.getElementById('svg-poly-vertices').innerHTML = verticesHtml;
+  }
+
+  function adjustPolygonSides(delta) {
+    const nextVal = polygonState.sides + delta;
+    if (nextVal >= 3 && nextVal <= 32) {
+      polygonState.sides = nextVal;
+      updatePolygonMath();
+      showToast(`Polígono actualizado (${polygonState.sides} lados)`, `Ángulo interno calculado: ${(((polygonState.sides - 2) * 180) / polygonState.sides).toFixed(1)}°`);
+    }
+  }
+
+  function setPolygonSides(sides) {
+    polygonState.sides = sides;
+    updatePolygonMath();
+    showToast(`Polígono seleccionado: ${sides} lados`, `Geometría DIN paramétrica recalculada`);
+  }
+
+  function setStrokeWidth(w) {
+    polygonState.strokeWidth = w;
+    updatePolygonMath();
+    document.querySelectorAll('.stroke-w-btn').forEach(btn => {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'font-bold', 'shadow-xs');
+      btn.classList.add('hover:bg-surface-container', 'text-on-surface');
+      if (btn.innerText.includes(`${w}pt`)) {
+        btn.classList.add('bg-primary', 'text-on-primary', 'font-bold', 'shadow-xs');
+        btn.classList.remove('hover:bg-surface-container', 'text-on-surface');
+      }
+    });
+  }
+
+  function setStrokeDash(dash) {
+    polygonState.strokeDash = dash;
+    updatePolygonMath();
+    document.querySelectorAll('.stroke-style-btn').forEach(btn => {
+      btn.classList.remove('bg-primary', 'text-on-primary', 'font-bold', 'shadow-xs');
+      btn.classList.add('hover:bg-surface-container', 'text-on-surface');
+    });
+    event.currentTarget.classList.add('bg-primary', 'text-on-primary', 'font-bold', 'shadow-xs');
+    event.currentTarget.classList.remove('hover:bg-surface-container', 'text-on-surface');
+  }
+
+  function setStrokeColor(hex) {
+    polygonState.strokeColor = hex;
+    updatePolygonMath();
+  }
+
+  function setFillColor(hex) {
+    polygonState.fillColor = hex;
+    updatePolygonMath();
+  }
+
+  function switchStudioTab(tabId, el) {
+    document.querySelectorAll('.studio-panel-content').forEach(p => p.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
+
+    document.querySelectorAll('.studio-tab-btn').forEach(btn => {
+      btn.classList.remove('bg-surface-container-lowest', 'text-primary', 'font-bold', 'shadow-xs');
+      btn.classList.add('text-on-surface-variant', 'hover:bg-surface-container');
+    });
+
+    el.classList.add('bg-surface-container-lowest', 'text-primary', 'font-bold', 'shadow-xs');
+    el.classList.remove('text-on-surface-variant', 'hover:bg-surface-container');
+  }
+
+  function selectQuickShape(name) {
+    showToast(`Forma lista para dibujar: ${name}`, `Haz clic y arrastra sobre la página activa para dimensionarla.`);
+  }
+
+  function triggerPolygonInsert() {
+    showToast(`Objeto insertado con éxito`, `Polígono regular (${polygonState.sides} lados) incrustado en la página 1 del contrato.`);
+  }
+
+  function showToast(title, desc) {
+    const toast = document.getElementById('studio-toast');
+    document.getElementById('toast-title').innerText = title;
+    document.getElementById('toast-desc').innerText = desc;
+    toast.classList.remove('translate-y-16', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+  }
+
+  function hideToast() {
+    const toast = document.getElementById('studio-toast');
+    toast.classList.remove('translate-y-0', 'opacity-100');
+    toast.classList.add('translate-y-16', 'opacity-0');
+  }
+
+  // Inicialización inmediata de geometría
+  updatePolygonMath();
+</script></main></div></body></html>
