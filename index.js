@@ -11,8 +11,8 @@ const PORT = process.env.PORT || 10000;
 // Serve static assets from dist
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// SPA fallback: any route returns index.html
-app.get('*', (req, res) => {
+// SPA fallback for Express v5 (path-to-regexp v8 requires (.*) instead of bare *)
+app.get('{*splat}', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
