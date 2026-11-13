@@ -53,13 +53,13 @@ export const ExportConvertModal = ({ isOpen, onClose, pagesData }) => {
             onClick={() => setFormat('docx')}
             className={`p-4 rounded-xl border text-left transition-all ${
               format === 'docx'
-                ? 'border-primary dark:border-sky-500 bg-primary-container/10 dark:bg-sky-950/40 ring-1 ring-primary dark:ring-sky-500'
+                ? 'border-primary dark:border-primary bg-primary-container/10 dark:bg-primary-container/20 ring-1 ring-primary dark:ring-primary'
                 : 'border-outline-variant/30 dark:border-slate-800 bg-surface-container-low dark:bg-slate-950/50 hover:border-outline-variant dark:hover:border-slate-700'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <FileText className="w-6 h-6 text-primary dark:text-sky-400" />
-              {format === 'docx' && <CheckCircle2 className="w-4 h-4 text-primary dark:text-sky-400" />}
+              <FileText className="w-6 h-6 text-primary dark:text-primary" />
+              {format === 'docx' && <CheckCircle2 className="w-4 h-4 text-primary dark:text-primary" />}
             </div>
             <h4 className="text-sm font-bold text-on-surface">Microsoft Word</h4>
             <p className="text-[11px] text-on-surface-variant dark:text-slate-400 mt-0.5">Formato editable .docx con tablas y párrafos</p>
@@ -70,13 +70,13 @@ export const ExportConvertModal = ({ isOpen, onClose, pagesData }) => {
             onClick={() => setFormat('pdf')}
             className={`p-4 rounded-xl border text-left transition-all ${
               format === 'pdf'
-                ? 'border-primary dark:border-sky-500 bg-primary-container/10 dark:bg-sky-950/40 ring-1 ring-primary dark:ring-sky-500'
+                ? 'border-primary dark:border-primary bg-primary-container/10 dark:bg-primary-container/20 ring-1 ring-primary dark:ring-primary'
                 : 'border-outline-variant/30 dark:border-slate-800 bg-surface-container-low dark:bg-slate-950/50 hover:border-outline-variant dark:hover:border-slate-700'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <FileCode className="w-6 h-6 text-secondary dark:text-amber-400" />
-              {format === 'pdf' && <CheckCircle2 className="w-4 h-4 text-primary dark:text-sky-400" />}
+              {format === 'pdf' && <CheckCircle2 className="w-4 h-4 text-primary dark:text-primary" />}
             </div>
             <h4 className="text-sm font-bold text-on-surface">Documento PDF</h4>
             <p className="text-[11px] text-on-surface-variant dark:text-slate-400 mt-0.5">Documento vectorial listo para imprimir o enviar</p>
@@ -86,7 +86,7 @@ export const ExportConvertModal = ({ isOpen, onClose, pagesData }) => {
         {/* File Name Options */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-on-surface flex items-center gap-1.5">
-            <Settings2 className="w-4 h-4 text-primary dark:text-sky-400" />
+            <Settings2 className="w-4 h-4 text-primary dark:text-primary" />
             Nombre del archivo:
           </label>
           <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ export const ExportConvertModal = ({ isOpen, onClose, pagesData }) => {
                 onClick={() => setFileName(name)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                   fileName === name
-                    ? 'bg-primary dark:bg-sky-500 text-on-primary dark:text-slate-950 border-primary dark:border-sky-500 font-semibold'
+                    ? 'bg-primary dark:bg-primary text-on-primary dark:text-on-primary border-primary dark:border-primary font-semibold'
                     : 'bg-surface-container-low dark:bg-slate-950/60 border-outline-variant/30 dark:border-slate-800 text-on-surface dark:text-slate-300 hover:border-slate-700'
                 }`}
               >

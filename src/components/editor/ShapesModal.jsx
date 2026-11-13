@@ -58,7 +58,7 @@ export const ShapesModal = ({ isOpen, onClose, onAddShape }) => {
         {/* Left: Shape Selectors */}
         <div className="space-y-4">
           <label className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant dark:text-slate-400 flex items-center gap-1.5">
-            <Shapes className="w-4 h-4 text-primary dark:text-sky-400" />
+            <Shapes className="w-4 h-4 text-primary dark:text-primary" />
             Catálogo de Figuras y Flechas
           </label>
           <div className="grid grid-cols-2 gap-2.5">
@@ -72,7 +72,7 @@ export const ShapesModal = ({ isOpen, onClose, onAddShape }) => {
                   onClick={() => setSelectedShape(shape.id)}
                   className={`flex items-center gap-2.5 p-3 rounded-xl border text-left text-sm transition-all ${
                     isSelected
-                      ? 'border-primary dark:border-sky-500 bg-primary/10 dark:bg-sky-950/40 text-primary dark:text-sky-300 font-semibold shadow-sm'
+                      ? 'border-primary dark:border-primary bg-primary/10 dark:bg-primary-container/20 text-primary dark:text-primary font-semibold shadow-sm'
                       : 'border-outline-variant/30 dark:border-slate-800 hover:border-outline-variant dark:hover:border-slate-700 text-on-surface dark:text-slate-300 bg-surface-container-low/40 dark:bg-slate-950/40'
                   }`}
                 >
@@ -88,10 +88,10 @@ export const ShapesModal = ({ isOpen, onClose, onAddShape }) => {
             <div className="p-4 rounded-xl bg-surface-container-low/80 dark:bg-slate-950/60 border border-outline-variant/30 dark:border-slate-800 space-y-2 animate-in fade-in">
               <div className="flex justify-between items-center text-xs font-medium">
                 <span className="text-on-surface dark:text-slate-300 flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-primary dark:text-sky-400" />
+                  <Sliders className="w-3.5 h-3.5 text-primary dark:text-primary" />
                   Número de lados / vértices (N):
                 </span>
-                <span className="px-2 py-0.5 rounded bg-primary dark:bg-sky-500 text-on-primary dark:text-slate-950 font-mono font-bold text-xs">
+                <span className="px-2 py-0.5 rounded bg-primary dark:bg-primary text-on-primary dark:text-on-primary font-mono font-bold text-xs">
                   {polygonSides}
                 </span>
               </div>
@@ -101,7 +101,7 @@ export const ShapesModal = ({ isOpen, onClose, onAddShape }) => {
                 max="16"
                 value={polygonSides}
                 onChange={(e) => setPolygonSides(parseInt(e.target.value, 10))}
-                className="w-full accent-primary dark:accent-sky-500 cursor-pointer"
+                className="w-full accent-primary dark:accent-primary cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-outline dark:text-slate-400">
                 <span>3 (Triángulo)</span>
@@ -115,7 +115,7 @@ export const ShapesModal = ({ isOpen, onClose, onAddShape }) => {
           <div className="space-y-3 pt-2">
             <div>
               <span className="text-xs font-medium text-on-surface-variant dark:text-slate-400 flex items-center gap-1 mb-2">
-                <Palette className="w-3.5 h-3.5 text-primary dark:text-sky-400" />
+                <Palette className="w-3.5 h-3.5 text-primary dark:text-primary" />
                 Color de Fondo (Relleno)
               </span>
               <div className="flex items-center gap-2 flex-wrap">

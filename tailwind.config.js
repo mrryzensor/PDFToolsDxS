@@ -23,12 +23,12 @@ export default {
         "inverse-on-surface": "var(--color-inverse-on-surface, #eef0ff)",
         "outline": "var(--color-outline, #737686)",
         "outline-variant": "var(--color-outline-variant, #c3c6d7)",
-        "surface-tint": "#0053db",
+        "surface-tint": "var(--color-primary-hover, #0053db)",
         "primary": "var(--color-primary, #004ac6)",
         "primary-container": "var(--color-primary-container, #2563eb)",
-        "on-primary": "#ffffff",
+        "on-primary": "var(--color-on-primary, #ffffff)",
         "on-primary-container": "#eeefff",
-        "inverse-primary": "#b4c5ff",
+        "inverse-primary": "var(--color-inverse-primary, #b4c5ff)",
         "secondary": "#855300",
         "secondary-container": "#fea619",
         "on-secondary": "#ffffff",
@@ -38,8 +38,8 @@ export default {
         "error": "#ba1a1a",
         "error-container": "#ffdad6",
         "on-error": "#ffffff",
-        "primary-fixed": "#dbe1ff",
-        "on-primary-fixed": "#00174b"
+        "primary-fixed": "var(--color-primary-fixed, #dbe1ff)",
+        "on-primary-fixed": "var(--color-on-primary-fixed, #00174b)"
       },
       fontFamily: {
         headline: ["Plus Jakarta Sans", "sans-serif"],

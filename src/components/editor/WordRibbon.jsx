@@ -42,7 +42,7 @@ export const WordRibbon = ({
             onClick={() => setActiveTab(tab.id)}
             className={`px-3.5 py-1.5 rounded-t-lg text-xs font-semibold tracking-wide transition-all ${
               activeTab === tab.id
-                ? 'bg-surface-container-low dark:bg-slate-900 text-primary dark:text-sky-400 border-t-2 border-primary dark:border-sky-400 shadow-sm'
+                ? 'bg-surface-container-low dark:bg-slate-900 text-primary dark:text-primary border-t-2 border-primary dark:border-primary shadow-sm'
                 : 'text-on-surface-variant dark:text-slate-400 hover:text-on-surface hover:bg-surface-container-high/40'
             }`}
           >
@@ -306,7 +306,7 @@ export const WordRibbon = ({
             <button
               type="button"
               onClick={onExportWord}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 dark:bg-sky-500/10 hover:bg-primary/20 dark:hover:bg-sky-500/20 text-primary dark:text-sky-300 border border-primary/30 dark:border-sky-500/30 text-xs font-semibold transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 dark:bg-primary/10 hover:bg-primary/20 dark:hover:bg-primary/20 text-primary dark:text-primary border border-primary/30 dark:border-primary/30 text-xs font-semibold transition-all"
             >
               <FileText className="w-3.5 h-3.5" />
               Exportar a Word (.docx)

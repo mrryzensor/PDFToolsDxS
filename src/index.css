@@ -20,6 +20,11 @@
   --color-outline-variant: #c3c6d7;
   --color-primary: #004ac6;
   --color-primary-container: #2563eb;
+  --color-on-primary: #ffffff;
+  --color-primary-hover: #0053db;
+  --color-primary-fixed: #dbe1ff;
+  --color-on-primary-fixed: #00174b;
+  --color-inverse-primary: #b4c5ff;
   --border-subtle: #e2e8f0;
   --sheet-border: #cbd5e1;
 }
@@ -42,6 +47,11 @@
   --color-outline-variant: #334155;
   --color-primary: #38bdf8;
   --color-primary-container: #0284c7;
+  --color-on-primary: #0f172a;
+  --color-primary-hover: #0ea5e9;
+  --color-primary-fixed: #dbe1ff;
+  --color-on-primary-fixed: #00174b;
+  --color-inverse-primary: #b4c5ff;
   --border-subtle: #1e293b;
   --sheet-border: #334155;
 }

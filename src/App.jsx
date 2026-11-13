@@ -424,11 +424,11 @@ export const App = () => {
                   }}
                   className={`w-full aspect-[1/1.3] rounded-xl border p-2 flex flex-col justify-between text-left transition-all relative ${
                     activePageIndex === idx
-                      ? 'border-primary dark:border-sky-400 ring-2 ring-primary dark:ring-sky-400 ring-offset-2 ring-offset-surface-container-low dark:ring-offset-slate-900 bg-surface-container-lowest dark:bg-slate-800'
+                      ? 'border-primary dark:border-primary ring-2 ring-primary dark:ring-primary ring-offset-2 ring-offset-surface-container-low dark:ring-offset-slate-900 bg-surface-container-lowest dark:bg-slate-800'
                       : 'border-outline-variant/30 dark:border-slate-800 bg-surface-container-lowest/60 dark:bg-slate-800/40 hover:border-outline-variant dark:hover:border-slate-700'
                   }`}
                 >
-                  <span className="text-[10px] font-bold text-primary dark:text-sky-400">Pág. {idx + 1}</span>
+                  <span className="text-[10px] font-bold text-primary dark:text-primary">Pág. {idx + 1}</span>
                   <div className="w-full flex-1 my-1 rounded bg-surface-container-low/50 dark:bg-slate-900/60 flex items-center justify-center text-[10px] text-outline dark:text-slate-400">
                     {p.elements.length} elementos
                   </div>

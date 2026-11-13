@@ -46,7 +46,7 @@ export const TableModal = ({ isOpen, onClose, onAddTable }) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3.5 rounded-xl bg-surface-container-low dark:bg-slate-950/60 border border-outline-variant/30 dark:border-slate-800 space-y-2">
             <label className="text-xs font-semibold text-on-surface-variant dark:text-slate-400 flex items-center gap-1.5">
-              <Rows className="w-4 h-4 text-primary dark:text-sky-400" />
+              <Rows className="w-4 h-4 text-primary dark:text-primary" />
               Filas: {rows}
             </label>
             <input
@@ -55,13 +55,13 @@ export const TableModal = ({ isOpen, onClose, onAddTable }) => {
               max="10"
               value={rows}
               onChange={(e) => setRows(parseInt(e.target.value, 10))}
-              className="w-full accent-primary dark:accent-sky-500 cursor-pointer"
+              className="w-full accent-primary dark:accent-primary cursor-pointer"
             />
           </div>
 
           <div className="p-3.5 rounded-xl bg-surface-container-low dark:bg-slate-950/60 border border-outline-variant/30 dark:border-slate-800 space-y-2">
             <label className="text-xs font-semibold text-on-surface-variant dark:text-slate-400 flex items-center gap-1.5">
-              <Columns className="w-4 h-4 text-primary dark:text-sky-400" />
+              <Columns className="w-4 h-4 text-primary dark:text-primary" />
               Columnas: {cols}
             </label>
             <input
@@ -70,7 +70,7 @@ export const TableModal = ({ isOpen, onClose, onAddTable }) => {
               max="8"
               value={cols}
               onChange={(e) => setCols(parseInt(e.target.value, 10))}
-              className="w-full accent-primary dark:accent-sky-500 cursor-pointer"
+              className="w-full accent-primary dark:accent-primary cursor-pointer"
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export const TableModal = ({ isOpen, onClose, onAddTable }) => {
             id="has-header"
             checked={hasHeader}
             onChange={(e) => setHasHeader(e.target.checked)}
-            className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary dark:accent-sky-500 cursor-pointer"
+            className="w-4 h-4 rounded text-primary focus:ring-primary accent-primary dark:accent-primary cursor-pointer"
           />
           <label htmlFor="has-header" className="text-sm font-medium text-on-surface dark:text-slate-300 cursor-pointer">
             Incluir fila de encabezado resaltada
@@ -97,7 +97,7 @@ export const TableModal = ({ isOpen, onClose, onAddTable }) => {
                   <div
                     key={cIdx}
                     className={`w-10 h-7 border border-outline-variant/30 dark:border-slate-800 flex items-center justify-center text-[10px] ${
-                      rIdx === 0 && hasHeader ? 'bg-primary-container/20 dark:bg-sky-950/60 font-bold text-primary dark:text-sky-400' : 'bg-surface-container-low/20 dark:bg-slate-900/40 text-outline dark:text-slate-500'
+                      rIdx === 0 && hasHeader ? 'bg-primary-container/20 dark:bg-primary-container/20 font-bold text-primary dark:text-primary' : 'bg-surface-container-low/20 dark:bg-slate-900/40 text-outline dark:text-slate-500'
                     }`}
                   >
                     •

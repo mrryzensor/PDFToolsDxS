@@ -126,16 +126,16 @@ export const EditorPage = ({
               >
                 {/* Drag Handle & Quick Actions Toolbar (Only when selected) */}
                 {isSelected && (
-                  <div className="absolute -top-9 left-0 flex items-center gap-1.5 bg-slate-900 text-white dark:bg-sky-950 dark:text-sky-100 px-2.5 py-1 rounded-md shadow-xl z-30 animate-in fade-in border border-slate-700 dark:border-sky-700/60">
+                  <div className="absolute -top-9 left-0 flex items-center gap-1.5 bg-slate-900 text-white dark:bg-primary-container/25 dark:text-primary px-2.5 py-1 rounded-md shadow-xl z-30 animate-in fade-in border border-slate-700 dark:border-primary/40">
                     <button
                       type="button"
                       onMouseDown={(e) => handleMouseDown(e, elem)}
                       title="Arrastrar para mover elemento"
-                      className="p-1 hover:bg-white/20 dark:hover:bg-sky-800/60 rounded cursor-grab active:cursor-grabbing text-white dark:text-sky-200 transition-colors"
+                      className="p-1 hover:bg-white/20 dark:hover:bg-primary/30 rounded cursor-grab active:cursor-grabbing text-white dark:text-primary transition-colors"
                     >
                       <Move className="w-4 h-4 stroke-[2.2]" />
                     </button>
-                    <div className="w-px h-3.5 bg-white/30 dark:bg-sky-700/60" />
+                    <div className="w-px h-3.5 bg-white/30 dark:bg-primary/40" />
                     <button
                       type="button"
                       onClick={() => onDeleteElement(elem.id)}
@@ -191,7 +191,7 @@ export const EditorPage = ({
                         {(elem.data || []).map((row, rIdx) => (
                           <tr
                             key={rIdx}
-                            className={rIdx === 0 && elem.hasHeader ? 'bg-primary/10 dark:bg-primary/20 font-semibold text-primary dark:text-sky-300' : 'border-t border-outline-variant/30 dark:border-slate-700'}
+                            className={rIdx === 0 && elem.hasHeader ? 'bg-primary/10 dark:bg-primary/20 font-semibold text-primary dark:text-primary' : 'border-t border-outline-variant/30 dark:border-slate-700'}
                           >
                             {row.map((cellText, cIdx) => (
                               <td

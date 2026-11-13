@@ -135,7 +135,7 @@ export const PdfToolsView = () => {
               onClick={() => setActiveTool(tool.id)}
               className={`p-4 rounded-2xl border text-left transition-all ${
                 isActive
-                  ? 'border-primary dark:border-sky-500 bg-primary-container/10 dark:bg-sky-950/40 ring-2 ring-primary dark:ring-sky-500 ring-offset-2 ring-offset-surface dark:ring-offset-slate-950'
+                  ? 'border-primary dark:border-primary bg-primary-container/10 dark:bg-primary-container/20 ring-2 ring-primary dark:ring-primary ring-offset-2 ring-offset-surface dark:ring-offset-slate-950'
                   : 'border-outline-variant/30 dark:border-slate-800 bg-surface-container-low dark:bg-slate-900/60 hover:border-outline-variant dark:hover:border-slate-700'
               }`}
             >

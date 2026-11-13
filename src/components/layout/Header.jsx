@@ -4,6 +4,7 @@ import {
   HelpCircle, Laptop
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { AccentColorPicker } from '../common/AccentColorPicker';
 
 export const Header = ({ 
   currentView, 
@@ -58,8 +59,11 @@ export const Header = ({
         </div>
       </div>
 
-      {/* Right Actions: Theme Toggle, Export Modal */}
+      {/* Right Actions: Accent Color, Theme Toggle, Export Modal */}
       <div className="flex items-center gap-2">
+        {/* Color principal (predeterminados + personalizado, se guarda) */}
+        <AccentColorPicker />
+
         {/* Dark/Light mode toggle */}
         <button
           type="button"
