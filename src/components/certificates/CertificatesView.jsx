@@ -603,10 +603,15 @@ export const CertificatesView = () => {
             ref={canvasRef}
             onMouseMove={handleMouseMoveCanvas}
             onMouseUp={handleMouseUpCanvas}
+            onClick={(e) => {
+              // Only clear selection if clicking outside any element and outside the canvas itself
+              if (e.target === canvasRef.current) {
+                setSelectedElementId(null);
+              }
+            }}
             className="flex-1 overflow-auto bg-surface-container/60 dark:bg-slate-950 p-6 md:p-8 flex justify-center items-start select-none"
           >
             <div
-              onClick={() => setSelectedElementId(null)}
               style={{
                 width: `${activeTemplate.width}px`,
                 height: `${activeTemplate.height}px`,
@@ -641,6 +646,10 @@ export const CertificatesView = () => {
                   <div
                     key={elem.id}
                     onMouseDown={(e) => handleMouseDownElem(e, elem.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElementId(elem.id);
+                    }}
                     style={{
                       position: 'absolute',
                       left: `${elem.x}px`,
