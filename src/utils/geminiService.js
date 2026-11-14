@@ -5,9 +5,14 @@
 import { getStoredGeminiKeys, updateStoredGeminiKey } from './storage';
 
 // Default prioritized model hierarchy (from newest free-tier to stable fallbacks)
+// Covers the latest active models from Google AI Studio (Gemini 3.5 Flash, 2.5 Flash, 2.0 Flash, etc.)
 export const DEFAULT_MODEL_PRIORITY = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.5-flash',
+  'gemini-3.1-flash-lite',
   'gemini-2.5-flash-lite',
   'gemini-2.5-flash',
+  'gemini-flash-latest',
   'gemini-2.0-flash',
   'gemini-2.0-flash-lite',
   'gemini-1.5-flash',
@@ -16,7 +21,7 @@ export const DEFAULT_MODEL_PRIORITY = [
 ];
 
 /**
- * Test a single API key and fetch its accessible models
+ * Test a single API key: validates model access and executes a minimal ping generation
  */
 export async function testGeminiApiKey(apiKey) {
   if (!apiKey || !apiKey.trim()) {
@@ -24,10 +29,10 @@ export async function testGeminiApiKey(apiKey) {
   }
 
   const cleanKey = apiKey.trim();
-  const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`;
+  const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(listUrl);
     const data = await res.json();
 
     if (!res.ok) {
@@ -46,7 +51,41 @@ export async function testGeminiApiKey(apiKey) {
         outputTokenLimit: m.outputTokenLimit,
       }));
 
-    return { ok: true, models };
+    // Test a real generation ping to confirm billing/quota status
+    let generationWorking = false;
+    let quotaError = null;
+
+    for (const testModel of ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-3.5-flash-lite']) {
+      try {
+        const pingRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${cleanKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] }),
+          }
+        );
+        const pingData = await pingRes.json();
+        if (pingRes.ok && pingData.candidates?.[0]) {
+          generationWorking = true;
+          break;
+        } else if (pingRes.status === 402 || (pingData?.error?.message && pingData.error.message.includes('prepayment'))) {
+          quotaError = 'Tu cuenta en Google AI Studio no tiene créditos prepagos (Error 402 Prepayment credits depleted). Crea una clave nueva en un proyecto con capa gratuita de Google AI Studio.';
+          break;
+        } else if (pingRes.status === 429) {
+          quotaError = 'Límite de cuota temporal excedido (429 Rate limit).';
+          break;
+        }
+      } catch (e) {
+        // Continue test
+      }
+    }
+
+    if (!generationWorking && quotaError) {
+      return { ok: false, error: quotaError, models };
+    }
+
+    return { ok: true, models, verified: generationWorking };
   } catch (err) {
     return { ok: false, error: err.message || 'Error de conexión con Google AI Studio' };
   }
