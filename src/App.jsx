@@ -6,6 +6,10 @@ import { ShapesModal } from './components/editor/ShapesModal';
 import { TableModal } from './components/editor/TableModal';
 import { ExportConvertModal } from './components/editor/ExportConvertModal';
 import { PdfToolsView } from './components/tools/PdfToolsView';
+import { CertificatesView } from './components/certificates/CertificatesView';
+import { LearningSessionsView } from './components/sessions/LearningSessionsView';
+import { RubricsView } from './components/rubrics/RubricsView';
+import { ApiKeysModal } from './components/common/ApiKeysModal';
 import { useToast } from './context/ToastContext';
 import { Plus, Layers } from 'lucide-react';
 import { exportToWord, exportEditorToPDF } from './utils/pdfEngine';
@@ -13,13 +17,15 @@ import { saveAs } from 'file-saver';
 
 export const App = () => {
   const { showToast } = useToast();
-  const [currentView, setCurrentView] = useState('editor'); // 'editor' | 'tools'
+  // Active module view: 'editor' | 'tools' | 'certificates' | 'sessions' | 'rubrics'
+  const [currentView, setCurrentView] = useState('editor');
   const [activeRibbonTab, setActiveRibbonTab] = useState('inicio');
 
   // Modal states
   const [isShapesModalOpen, setIsShapesModalOpen] = useState(false);
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isApiKeysModalOpen, setIsApiKeysModalOpen] = useState(false);
 
   // Document Pages State - Sized specifically for A4 (595px width)
   const [pages, setPages] = useState([
@@ -170,6 +176,9 @@ export const App = () => {
   // Keyboard shortcut listener for Ctrl+V (Paste Image) & Ctrl+Z / Ctrl+Y
   useEffect(() => {
     const handlePaste = (e) => {
+      // Only paste into canvas if we are inside editor view
+      if (currentView !== 'editor') return;
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -207,7 +216,7 @@ export const App = () => {
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [historyIndex, history, pages]);
+  }, [historyIndex, history, pages, currentView]);
 
   // Insert elements into the currently active page
   const handleAddText = () => {
@@ -351,6 +360,7 @@ export const App = () => {
         currentView={currentView}
         setCurrentView={setCurrentView}
         onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)}
       />
 
       {/* Hidden File Input for Image upload button */}
@@ -460,6 +470,21 @@ export const App = () => {
         <PdfToolsView />
       )}
 
+      {/* View 3: Certificate Generator Canvas, Bulk Excel & QR Validator */}
+      {currentView === 'certificates' && (
+        <CertificatesView />
+      )}
+
+      {/* View 4: CNEB Learning Session Generator with Dynamic Gemini */}
+      {currentView === 'sessions' && (
+        <LearningSessionsView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
+      )}
+
+      {/* View 5: Rubrics & Interactive Student Exam Solver */}
+      {currentView === 'rubrics' && (
+        <RubricsView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
+      )}
+
       {/* Modals */}
       <ShapesModal
         isOpen={isShapesModalOpen}
@@ -477,6 +502,11 @@ export const App = () => {
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         pagesData={pages}
+      />
+
+      <ApiKeysModal
+        isOpen={isApiKeysModalOpen}
+        onClose={() => setIsApiKeysModalOpen(false)}
       />
     </div>
   );
