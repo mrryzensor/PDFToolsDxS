@@ -12,7 +12,7 @@ import {
 } from '../../utils/curriculumNacional';
 import { 
   getLearningSessions, saveLearningSession, deleteLearningSession, 
-  getStoredGeminiKeys 
+  getStoredGeminiKeys, saveRubric 
 } from '../../utils/storage';
 import { generateContentWithFailover } from '../../utils/geminiService';
 import { exportSessionToWord, exportSessionToPdf } from '../../utils/sessionDocxExporter';
@@ -85,7 +85,7 @@ DATOS DE LA SESIÓN:
 - Competencia Transversal: ${transObj.name}
 - Enfoque Transversal: ${enfObj.name}
 
-Debes responder ÚNICAMENTE en formato JSON válido con la siguiente estructura exacta:
+Debes responder ÚNICAMENTE en formato JSON válido con la siguiente estructura exacta que incluye la Sesión, su Rúbrica Analítica de 4 niveles y su Evaluación de 5 preguntas:
 {
   "titulo": "Título motivador y significativo de la sesión",
   "numeroSesion": "01",
@@ -104,7 +104,70 @@ Debes responder ÚNICAMENTE en formato JSON válido con la siguiente estructura 
   "tiempoDesarrollo": 60,
   "secuenciaCierre": "Evaluación formativa, retroalimentación reflexiva, preguntas de metacognición (¿Qué aprendimos hoy? ¿Para qué nos sirve?)",
   "tiempoCierre": 15,
-  "recursosMateriales": "Lista detallada de recursos educativos físicos y digitales"
+  "recursosMateriales": "Lista detallada de recursos educativos físicos y digitales",
+  "rubrica": {
+    "titulo": "Rúbrica de Evaluación CNEB: ${form.titulo || form.temaOContenido}",
+    "criterios": [
+      {
+        "criterio": "Criterio 1 alineado a la primera capacidad",
+        "inicio": "Desempeño en nivel Inicio (C)",
+        "proceso": "Desempeño en nivel Proceso (B)",
+        "logrado": "Desempeño en nivel Logro Esperado (A)",
+        "destacado": "Desempeño en nivel Logro Destacado (AD)"
+      },
+      {
+        "criterio": "Criterio 2 alineado a la segunda capacidad",
+        "inicio": "Desempeño en nivel Inicio (C)",
+        "proceso": "Desempeño en nivel Proceso (B)",
+        "logrado": "Desempeño en nivel Logro Esperado (A)",
+        "destacado": "Desempeño en nivel Logro Destacado (AD)"
+      },
+      {
+        "criterio": "Criterio 3 articulado a la evidencia",
+        "inicio": "Desempeño en nivel Inicio (C)",
+        "proceso": "Desempeño en nivel Proceso (B)",
+        "logrado": "Desempeño en nivel Logro Esperado (A)",
+        "destacado": "Desempeño en nivel Logro Destacado (AD)"
+      }
+    ]
+  },
+  "evaluacion": [
+    {
+      "id": "q1",
+      "enunciado": "Pregunta 1 contextualizada sobre el aprendizaje de la sesión",
+      "opciones": ["Alternativa A", "Alternativa B", "Alternativa C", "Alternativa D"],
+      "respuestaCorrecta": 0,
+      "explicacion": "Justificación pedagógica de la respuesta"
+    },
+    {
+      "id": "q2",
+      "enunciado": "Pregunta 2 de aplicación práctica o análisis",
+      "opciones": ["Alternativa A", "Alternativa B", "Alternativa C", "Alternativa D"],
+      "respuestaCorrecta": 1,
+      "explicacion": "Justificación pedagógica de la respuesta"
+    },
+    {
+      "id": "q3",
+      "enunciado": "Pregunta 3 de juicio crítico o resolución",
+      "opciones": ["Alternativa A", "Alternativa B", "Alternativa C", "Alternativa D"],
+      "respuestaCorrecta": 2,
+      "explicacion": "Justificación pedagógica de la respuesta"
+    },
+    {
+      "id": "q4",
+      "enunciado": "Pregunta 4 orientada a la evidencia planteada",
+      "opciones": ["Alternativa A", "Alternativa B", "Alternativa C", "Alternativa D"],
+      "respuestaCorrecta": 0,
+      "explicacion": "Justificación pedagógica de la respuesta"
+    },
+    {
+      "id": "q5",
+      "enunciado": "Pregunta 5 de síntesis o transferencia",
+      "opciones": ["Alternativa A", "Alternativa B", "Alternativa C", "Alternativa D"],
+      "respuestaCorrecta": 3,
+      "explicacion": "Justificación pedagógica de la respuesta"
+    }
+  ]
 }
 `;
 
@@ -130,10 +193,27 @@ Debes responder ÚNICAMENTE en formato JSON válido con la siguiente estructura 
       };
 
       saveLearningSession(fullSession);
+
+      // Auto-save generated Rubric & Exam to the Rubrics & Exams database
+      if (parsedData.rubrica && parsedData.evaluacion) {
+        saveRubric({
+          id: `rub_${Date.now()}`,
+          titulo: parsedData.rubrica.titulo || `Rúbrica y Evaluación: ${fullSession.titulo}`,
+          area: form.area,
+          grado: form.grado,
+          competencia: compObj.name,
+          criterios: parsedData.rubrica.criterios || [],
+          preguntasEvaluacion: parsedData.evaluacion || [],
+          fecha: new Date().toLocaleDateString('es-ES'),
+          modelUsed: res.modelUsed,
+          linkedSessionId: fullSession.id,
+        });
+      }
+
       refreshSessions();
       setActiveSession(fullSession);
       setIsViewModalOpen(true);
-      showToast(`¡Sesión generada con éxito con ${res.modelUsed}!`, 'success');
+      showToast(`¡Sesión, Rúbrica y Examen generados con éxito con ${res.modelUsed}!`, 'success');
     } catch (err) {
       console.error(err);
       showToast(`Error de generación: ${err.message}`, 'error', 6000);

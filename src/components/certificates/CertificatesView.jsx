@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Award, QrCode, Upload, FileSpreadsheet, Plus, Trash2, 
   Download, Eye, CheckCircle2, AlertCircle, Edit3, UserCheck, 
