@@ -836,8 +836,6 @@ export const CertificatesView = () => {
           {/* Interactive Certificate Canvas Stage */}
           <main
             ref={canvasRef}
-            onMouseMove={handleMouseMoveCanvas}
-            onMouseUp={handleMouseUpCanvas}
             onClick={(e) => {
               // Only clear selection if clicking outside any element and outside the canvas itself
               if (e.target === canvasRef.current) {
