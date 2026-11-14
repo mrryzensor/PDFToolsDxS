@@ -875,6 +875,7 @@ export const CertificatesView = () => {
                     .replace(/\{\{\s*horas\s*\}\}/gi, `${activeTemplate.hours} horas académicas`);
                 }
 
+                const isQr = elem.type === 'qr';
                 return (
                   <div
                     key={elem.id}
@@ -895,7 +896,9 @@ export const CertificatesView = () => {
                       textDecoration: elem.textDecoration || 'none',
                       textAlign: elem.textAlign || 'left',
                     }}
-                    className={`cursor-move p-1.5 rounded relative group ${
+                    className={`cursor-move relative group ${
+                      isQr ? 'p-0 rounded-2xl' : 'p-1.5 rounded'
+                    } ${
                       isSelected
                         ? 'ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-slate-900 bg-primary/5'
                         : 'hover:ring-1 hover:ring-outline-variant/60'
@@ -906,10 +909,10 @@ export const CertificatesView = () => {
                     {elem.type === 'qr' && (
                       <div
                         style={{
-                          width: `${elem.width || 110}px`,
+                          width: '100%',
                           backgroundColor: elem.bgColor || '#ffffff',
                         }}
-                        className={`p-2.5 rounded-xl flex flex-col items-center justify-center text-center select-none ${
+                        className={`p-2.5 rounded-2xl flex flex-col items-center justify-center text-center select-none box-border ${
                           elem.frameStyle === 'border'
                             ? 'border-2 border-primary/40 shadow-none'
                             : elem.frameStyle === 'clean'
@@ -920,8 +923,8 @@ export const CertificatesView = () => {
                         <QrCode
                           style={{
                             color: elem.color || '#004ac6',
-                            width: `${Math.max(40, (elem.width || 110) - 30)}px`,
-                            height: `${Math.max(40, (elem.width || 110) - 30)}px`,
+                            width: `${Math.max(40, (elem.width || 110) - 28)}px`,
+                            height: `${Math.max(40, (elem.width || 110) - 28)}px`,
                           }}
                         />
                         <span
@@ -944,22 +947,22 @@ export const CertificatesView = () => {
                         {/* Top-Left */}
                         <div
                           onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'nw')}
-                          className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform z-10"
+                          className="absolute -top-2 -left-2 w-4 h-4 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform z-20"
                         />
                         {/* Top-Right */}
                         <div
                           onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'ne')}
-                          className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nesw-resize shadow-md hover:scale-125 transition-transform z-10"
+                          className="absolute -top-2 -right-2 w-4 h-4 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nesw-resize shadow-md hover:scale-125 transition-transform z-20"
                         />
                         {/* Bottom-Left */}
                         <div
                           onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'sw')}
-                          className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nesw-resize shadow-md hover:scale-125 transition-transform z-10"
+                          className="absolute -bottom-2 -left-2 w-4 h-4 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nesw-resize shadow-md hover:scale-125 transition-transform z-20"
                         />
                         {/* Bottom-Right */}
                         <div
                           onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'se')}
-                          className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform z-10"
+                          className="absolute -bottom-2 -right-2 w-4 h-4 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform z-20"
                         />
                       </>
                     )}
