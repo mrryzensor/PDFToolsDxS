@@ -82,9 +82,130 @@ export const CertificatesView = () => {
     setEmissions(getCertEmissions());
   };
 
-  // Canvas Dragging handler with high-frequency local state (no immediate disk writes on every mouse move)
+  // Canvas Dragging & Resizing handler with zero-lag requestAnimationFrame and window-level mouse listeners
   const [dragInfo, setDragInfo] = useState(null);
+  const [resizeInfo, setResizeInfo] = useState(null);
   const canvasRef = useRef(null);
+  const templatesRef = useRef(templates);
+  templatesRef.current = templates;
+  const activeTemplateRef = useRef(activeTemplate);
+  activeTemplateRef.current = activeTemplate;
+  const animFrameRef = useRef(null);
+
+  // Mouse move handler attached to window for smooth drag & resize across the entire screen
+  useEffect(() => {
+    const handleGlobalMouseMove = (e) => {
+      if (!dragInfo && !resizeInfo) return;
+
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+
+      animFrameRef.current = requestAnimationFrame(() => {
+        if (dragInfo) {
+          const dx = e.clientX - dragInfo.startX;
+          const dy = e.clientY - dragInfo.startY;
+
+          const newX = Math.max(0, Math.min(activeTemplateRef.current.width - 40, dragInfo.initX + dx));
+          const newY = Math.max(0, Math.min(activeTemplateRef.current.height - 25, dragInfo.initY + dy));
+
+          setTemplates((prev) =>
+            prev.map((t) => {
+              if (t.id !== activeTemplateRef.current.id) return t;
+              return {
+                ...t,
+                elements: t.elements.map((el) =>
+                  el.id === dragInfo.elemId ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el
+                ),
+              };
+            })
+          );
+        } else if (resizeInfo) {
+          const dx = e.clientX - resizeInfo.startX;
+          const dy = e.clientY - resizeInfo.startY;
+          const { corner, initX, initY, initW, initH, elemId, isQr } = resizeInfo;
+
+          let newW = initW;
+          let newH = initH;
+          let newX = initX;
+          let newY = initY;
+
+          if (isQr) {
+            // Keep aspect ratio 1:1 for QR
+            const delta = Math.max(Math.abs(dx), Math.abs(dy)) * (dx > 0 || dy > 0 ? 1 : -1);
+            if (corner === 'se') {
+              newW = Math.max(50, Math.min(300, initW + delta));
+              newH = newW;
+            } else if (corner === 'nw') {
+              newW = Math.max(50, Math.min(300, initW - delta));
+              newH = newW;
+              newX = initX + (initW - newW);
+              newY = initY + (initH - newH);
+            } else if (corner === 'ne') {
+              newW = Math.max(50, Math.min(300, initW + delta));
+              newH = newW;
+              newY = initY + (initH - newH);
+            } else if (corner === 'sw') {
+              newW = Math.max(50, Math.min(300, initW - delta));
+              newH = newW;
+              newX = initX + (initW - newW);
+            }
+          } else {
+            // Free text box resize
+            if (corner === 'se') {
+              newW = Math.max(80, initW + dx);
+            } else if (corner === 'sw') {
+              newW = Math.max(80, initW - dx);
+              newX = initX + (initW - newW);
+            } else if (corner === 'ne') {
+              newW = Math.max(80, initW + dx);
+            } else if (corner === 'nw') {
+              newW = Math.max(80, initW - dx);
+              newX = initX + (initW - newW);
+            }
+          }
+
+          setTemplates((prev) =>
+            prev.map((t) => {
+              if (t.id !== activeTemplateRef.current.id) return t;
+              return {
+                ...t,
+                elements: t.elements.map((el) =>
+                  el.id === elemId
+                    ? {
+                        ...el,
+                        x: Math.round(newX),
+                        y: Math.round(newY),
+                        width: Math.round(newW),
+                        ...(isQr ? { height: Math.round(newH) } : {}),
+                      }
+                    : el
+                ),
+              };
+            })
+          );
+        }
+      });
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (dragInfo || resizeInfo) {
+        if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+        const currentActive = templatesRef.current.find((t) => t.id === selectedTemplateId) || activeTemplateRef.current;
+        saveCertTemplate(currentActive);
+        setDragInfo(null);
+        setResizeInfo(null);
+      }
+    };
+
+    if (dragInfo || resizeInfo) {
+      window.addEventListener('mousemove', handleGlobalMouseMove);
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [dragInfo, resizeInfo, selectedTemplateId]);
 
   const handleMouseDownElem = (e, elemId) => {
     e.stopPropagation();
@@ -101,35 +222,22 @@ export const CertificatesView = () => {
     });
   };
 
-  const handleMouseMoveCanvas = (e) => {
-    if (!dragInfo) return;
-    const dx = e.clientX - dragInfo.startX;
-    const dy = e.clientY - dragInfo.startY;
+  const handleMouseDownResize = (e, elemId, corner) => {
+    e.stopPropagation();
+    const elem = activeTemplate.elements.find((el) => el.id === elemId);
+    if (!elem) return;
 
-    const newX = Math.max(0, Math.min(activeTemplate.width - 50, dragInfo.initX + dx));
-    const newY = Math.max(0, Math.min(activeTemplate.height - 30, dragInfo.initY + dy));
-
-    // Fast local memory update during drag
-    setTemplates((prev) =>
-      prev.map((t) => {
-        if (t.id !== activeTemplate.id) return t;
-        return {
-          ...t,
-          elements: t.elements.map((el) =>
-            el.id === dragInfo.elemId ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el
-          ),
-        };
-      })
-    );
-  };
-
-  const handleMouseUpCanvas = () => {
-    if (dragInfo) {
-      // Save permanently to storage only once on mouse release
-      const currentActive = templates.find((t) => t.id === selectedTemplateId) || activeTemplate;
-      saveCertTemplate(currentActive);
-      setDragInfo(null);
-    }
+    setResizeInfo({
+      elemId,
+      corner,
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: elem.x,
+      initY: elem.y,
+      initW: elem.width || (elem.type === 'qr' ? 110 : 300),
+      initH: elem.height || (elem.type === 'qr' ? 110 : 50),
+      isQr: elem.type === 'qr',
+    });
   };
 
   // Update element property
@@ -789,9 +897,9 @@ export const CertificatesView = () => {
                       textDecoration: elem.textDecoration || 'none',
                       textAlign: elem.textAlign || 'left',
                     }}
-                    className={`cursor-move p-1 transition-all rounded ${
+                    className={`cursor-move p-1.5 rounded relative group ${
                       isSelected
-                        ? 'ring-2 ring-primary ring-offset-1 ring-offset-white dark:ring-offset-slate-900 bg-primary/5'
+                        ? 'ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-slate-900 bg-primary/5'
                         : 'hover:ring-1 hover:ring-outline-variant/60'
                     }`}
                   >
@@ -803,7 +911,7 @@ export const CertificatesView = () => {
                           width: `${elem.width || 110}px`,
                           backgroundColor: elem.bgColor || '#ffffff',
                         }}
-                        className={`p-2 rounded-xl flex flex-col items-center justify-center text-center transition-all ${
+                        className={`p-2.5 rounded-xl flex flex-col items-center justify-center text-center select-none ${
                           elem.frameStyle === 'border'
                             ? 'border-2 border-primary/40 shadow-none'
                             : elem.frameStyle === 'clean'
@@ -830,6 +938,32 @@ export const CertificatesView = () => {
                           </span>
                         )}
                       </div>
+                    )}
+
+                    {/* Corner Resize Handles for selected elements */}
+                    {isSelected && (
+                      <>
+                        {/* Top-Left */}
+                        <div
+                          onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'nw')}
+                          className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform z-10"
+                        />
+                        {/* Top-Right */}
+                        <div
+                          onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'ne')}
+                          className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nesw-resize shadow-md hover:scale-125 transition-transform z-10"
+                        />
+                        {/* Bottom-Left */}
+                        <div
+                          onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'sw')}
+                          className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nesw-resize shadow-md hover:scale-125 transition-transform z-10"
+                        />
+                        {/* Bottom-Right */}
+                        <div
+                          onMouseDown={(e) => handleMouseDownResize(e, elem.id, 'se')}
+                          className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-primary border-2 border-white dark:border-slate-900 rounded-full cursor-nwse-resize shadow-md hover:scale-125 transition-transform z-10"
+                        />
+                      </>
                     )}
                   </div>
                 );

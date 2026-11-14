@@ -5,7 +5,7 @@ import {
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Primary typography used in the DocuCraft Pro UI: Plus Jakarta Sans / Inter
+// Official Typography used in MINEDU CNEB documents
 const PRIMARY_FONT = 'Plus Jakarta Sans';
 const BODY_FONT = 'Inter';
 
@@ -26,16 +26,16 @@ export async function exportSessionToWord(session) {
       width: { size: widthPercent, type: WidthType.PERCENTAGE },
       shading: { fill: customFill || (isHeader ? 'EAEDFF' : 'FFFFFF') },
       borders: tableBorder,
-      margins: { top: 120, bottom: 120, left: 140, right: 140 },
+      margins: { top: 140, bottom: 140, left: 160, right: 160 },
       children: lines.map((line) => {
         return new Paragraph({
           alignment: AlignmentType.LEFT,
-          spacing: { after: 60, before: 30 },
+          spacing: { after: 70, before: 30 },
           children: [
             new TextRun({
               text: line,
               bold: isHeader || bold || (line.includes(':') && line.length < 40),
-              size: isHeader ? 19 : 18,
+              size: isHeader ? 22 : 21, // 11pt / 10.5pt standard
               font: isHeader ? PRIMARY_FONT : BODY_FONT,
               color: isHeader ? '004AC6' : '131B2E',
             }),
@@ -56,12 +56,12 @@ export async function exportSessionToWord(session) {
         // Title Header
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 100 },
+          spacing: { after: 120 },
           children: [
             new TextRun({
               text: 'SESIÓN DE APRENDIZAJE N° ' + (session.numeroSesion || '01'),
               bold: true,
-              size: 26,
+              size: 28, // 14pt
               font: PRIMARY_FONT,
               color: '004AC6',
             }),
@@ -69,13 +69,13 @@ export async function exportSessionToWord(session) {
         }),
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 280 },
+          spacing: { after: 300 },
           children: [
             new TextRun({
               text: `"${session.titulo || 'Título de la sesión'}"`,
               bold: true,
               italics: true,
-              size: 22,
+              size: 24, // 12pt
               font: PRIMARY_FONT,
               color: '131B2E',
             }),
@@ -84,12 +84,12 @@ export async function exportSessionToWord(session) {
 
         // Section I: Datos Informativos
         new Paragraph({
-          spacing: { before: 200, after: 120 },
+          spacing: { before: 200, after: 140 },
           children: [
             new TextRun({
               text: 'I. DATOS INFORMATIVOS',
               bold: true,
-              size: 22,
+              size: 24,
               font: PRIMARY_FONT,
               color: '004AC6',
             }),
@@ -111,12 +111,12 @@ export async function exportSessionToWord(session) {
 
         // Section II: Propósitos de Aprendizaje
         new Paragraph({
-          spacing: { before: 280, after: 120 },
+          spacing: { before: 300, after: 140 },
           children: [
             new TextRun({
               text: 'II. PROPÓSITOS DE APRENDIZAJE',
               bold: true,
-              size: 22,
+              size: 24,
               font: PRIMARY_FONT,
               color: '004AC6',
             }),
@@ -162,14 +162,14 @@ export async function exportSessionToWord(session) {
           ],
         }),
 
-        // Section III: Secuencia Didáctica (Momento Pedagógicos)
+        // Section III: Secuencia Didáctica
         new Paragraph({
-          spacing: { before: 280, after: 120 },
+          spacing: { before: 300, after: 140 },
           children: [
             new TextRun({
               text: 'III. SECUENCIA DIDÁCTICA (MOMENTOS PEDAGÓGICOS)',
               bold: true,
-              size: 22,
+              size: 24,
               font: PRIMARY_FONT,
               color: '004AC6',
             }),
@@ -211,12 +211,12 @@ export async function exportSessionToWord(session) {
 
         // Section IV: Recursos y Materiales
         new Paragraph({
-          spacing: { before: 280, after: 120 },
+          spacing: { before: 300, after: 140 },
           children: [
             new TextRun({
               text: 'IV. RECURSOS Y MATERIALES',
               bold: true,
-              size: 22,
+              size: 24,
               font: PRIMARY_FONT,
               color: '004AC6',
             }),
@@ -241,9 +241,7 @@ export async function exportSessionToWord(session) {
 }
 
 /**
- * Export Learning Session to PDF rendering exact tables and visual structure matching the UI matrix
- * Automatically wraps all text lines with splitTextToSize to prevent horizontal clipping,
- * and adds elegant spacing between sections matching the application's design.
+ * Export Learning Session to PDF using official 10pt / 11pt readable typography
  */
 export function exportSessionToPdf(session) {
   const doc = new jsPDF({
@@ -257,29 +255,29 @@ export function exportSessionToPdf(session) {
   const contentWidth = pageWidth - margin * 2;
   let currentY = 36;
 
-  // 1. Title Header with Sapphire Primary Color and automatic multi-line wrapping
+  // 1. Title Header (Official 15pt font)
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(0, 74, 198); // Sapphire primary #004ac6
+  doc.setFontSize(15);
+  doc.setTextColor(0, 74, 198);
   const titleText = `SESIÓN PEDAGÓGICA CNEB: ${session.titulo || 'Sin Título'}`;
   const wrappedTitle = doc.splitTextToSize(titleText, contentWidth);
   doc.text(wrappedTitle, margin, currentY);
-  currentY += wrappedTitle.length * 16 + 4;
+  currentY += wrappedTitle.length * 18 + 4;
 
-  // Subtitle
+  // Subtitle (10.5pt)
   doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(10.5);
   doc.setTextColor(115, 118, 134);
   const subtitleText = `Plantilla Oficial de Matriz Curricular • ${session.area || 'Comunicación'} (${session.grado || ''})`;
   const wrappedSubtitle = doc.splitTextToSize(subtitleText, contentWidth);
   doc.text(wrappedSubtitle, margin, currentY);
-  currentY += wrappedSubtitle.length * 12 + 14;
+  currentY += wrappedSubtitle.length * 14 + 16;
 
   // ----------------------------------------------------
-  // I. DATOS INFORMATIVOS (Rendered with rounded appearance and inner padding)
+  // I. DATOS INFORMATIVOS (Official readable 10pt text)
   // ----------------------------------------------------
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(11.5);
   doc.setTextColor(0, 74, 198);
   doc.text('I. DATOS INFORMATIVOS', margin, currentY);
   currentY += 8;
@@ -290,11 +288,11 @@ export function exportSessionToPdf(session) {
     theme: 'grid',
     styles: {
       font: 'Helvetica',
-      fontSize: 8,
+      fontSize: 10, // Official readable font size
       textColor: [19, 27, 46],
       lineColor: [225, 228, 242],
       lineWidth: 0.6,
-      cellPadding: 7,
+      cellPadding: 8,
       overflow: 'linebreak',
     },
     body: [
@@ -307,14 +305,13 @@ export function exportSessionToPdf(session) {
     ],
   });
 
-  // Generous spacing between sections (18pt) matching the UI
   currentY = doc.lastAutoTable.finalY + 18;
 
   // ----------------------------------------------------
-  // II. PROPÓSITOS DE APRENDIZAJE (Table matching UI matrix)
+  // II. PROPÓSITOS DE APRENDIZAJE (Official readable 10pt text)
   // ----------------------------------------------------
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(11.5);
   doc.setTextColor(0, 74, 198);
   doc.text('II. PROPÓSITOS DE APRENDIZAJE', margin, currentY);
   currentY += 8;
@@ -322,7 +319,6 @@ export function exportSessionToPdf(session) {
   const capsList = (session.capacidades || []).map((c) => `• ${c}`).join('\n');
   const compContent = `${session.competencia || ''}\n\n${capsList}`;
 
-  // Distribute width exactly across available content area (contentWidth = 523pt)
   const col1Width = Math.round(contentWidth * 0.34);
   const col2Width = Math.round(contentWidth * 0.33);
   const col3Width = contentWidth - col1Width - col2Width;
@@ -333,9 +329,9 @@ export function exportSessionToPdf(session) {
     theme: 'grid',
     head: [
       [
-        { content: 'Competencias y Capacidades', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', cellWidth: col1Width } },
-        { content: 'Desempeños Precisados', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', cellWidth: col2Width } },
-        { content: 'Criterios de Evaluación y Evidencias', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', cellWidth: col3Width } },
+        { content: 'Competencias y Capacidades', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10.5, cellWidth: col1Width } },
+        { content: 'Desempeños Precisados', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10.5, cellWidth: col2Width } },
+        { content: 'Criterios de Evaluación y Evidencias', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10.5, cellWidth: col3Width } },
       ],
     ],
     body: [
@@ -358,19 +354,17 @@ export function exportSessionToPdf(session) {
     ],
     styles: {
       font: 'Helvetica',
-      fontSize: 8,
+      fontSize: 9.5, // 9.5 - 10pt readable text
       textColor: [19, 27, 46],
       lineColor: [225, 228, 242],
       lineWidth: 0.6,
-      cellPadding: 7,
+      cellPadding: 8,
       overflow: 'linebreak',
     },
   });
 
-  // Generous spacing before section III
   currentY = doc.lastAutoTable.finalY + 18;
 
-  // Check if we need a new page for Secuencia Didáctica
   if (currentY > 640) {
     doc.addPage();
     currentY = 36;
@@ -380,13 +374,13 @@ export function exportSessionToPdf(session) {
   // III. SECUENCIA DIDÁCTICA (MOMENTOS PEDAGÓGICOS)
   // ----------------------------------------------------
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(11.5);
   doc.setTextColor(0, 74, 198);
   doc.text('III. SECUENCIA DIDÁCTICA (MOMENTOS PEDAGÓGICOS)', margin, currentY);
   currentY += 8;
 
-  const momentoColWidth = 140;
-  const tiempoColWidth = 45;
+  const momentoColWidth = 145;
+  const tiempoColWidth = 50;
   const actividadColWidth = contentWidth - momentoColWidth - tiempoColWidth;
 
   autoTable(doc, {
@@ -395,9 +389,9 @@ export function exportSessionToPdf(session) {
     theme: 'grid',
     head: [
       [
-        { content: 'Momento Pedagógico', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', cellWidth: momentoColWidth } },
-        { content: 'Procesos Didácticos y Actividades de Aprendizaje', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', cellWidth: actividadColWidth } },
-        { content: 'Tiempo', styles: { halign: 'center', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', cellWidth: tiempoColWidth } },
+        { content: 'Momento Pedagógico', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10.5, cellWidth: momentoColWidth } },
+        { content: 'Procesos Didácticos y Actividades de Aprendizaje', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10.5, cellWidth: actividadColWidth } },
+        { content: 'Tiempo', styles: { halign: 'center', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10.5, cellWidth: tiempoColWidth } },
       ],
     ],
     body: [
@@ -419,16 +413,15 @@ export function exportSessionToPdf(session) {
     ],
     styles: {
       font: 'Helvetica',
-      fontSize: 8,
+      fontSize: 9.5, // 9.5 - 10pt readable text
       textColor: [19, 27, 46],
       lineColor: [225, 228, 242],
       lineWidth: 0.6,
-      cellPadding: 7,
+      cellPadding: 8,
       overflow: 'linebreak',
     },
   });
 
-  // Generous spacing before section IV
   currentY = doc.lastAutoTable.finalY + 18;
 
   if (currentY > 730) {
@@ -440,7 +433,7 @@ export function exportSessionToPdf(session) {
   // IV. RECURSOS Y MATERIALES
   // ----------------------------------------------------
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFontSize(11.5);
   doc.setTextColor(0, 74, 198);
   doc.text('IV. RECURSOS Y MATERIALES', margin, currentY);
   currentY += 8;
@@ -452,14 +445,14 @@ export function exportSessionToPdf(session) {
     body: [
       [
         { 
-          content: session.recursosMateriales || '• Guías de trabajo y fichas de lectura\n• Pizarra interactiva, plumones\n• Fichas de autoevaluación formativa', 
+          content: session.recursosMateriales || '• Guías de trabajo y fichas de lectura estructuradas\n• Pizarra interactiva, plumones\n• Fichas de autoevaluación formativa', 
           styles: { cellPadding: 8, cellWidth: contentWidth } 
         }
       ]
     ],
     styles: {
       font: 'Helvetica',
-      fontSize: 8,
+      fontSize: 10,
       textColor: [19, 27, 46],
       lineColor: [225, 228, 242],
       lineWidth: 0.6,

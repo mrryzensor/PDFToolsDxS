@@ -3,16 +3,20 @@ import {
   WidthType, HeadingLevel, AlignmentType, BorderStyle 
 } from 'docx';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const PRIMARY_FONT = 'Plus Jakarta Sans';
+const BODY_FONT = 'Inter';
 
 /**
- * Export Rubric & Evaluation to Microsoft Word (.docx)
+ * Export Rubric & Evaluation to Microsoft Word (.docx) with official readable typography
  */
 export async function exportRubricToWord(rubric) {
   const tableBorder = {
-    top: { style: BorderStyle.SINGLE, size: 4, color: '737686' },
-    bottom: { style: BorderStyle.SINGLE, size: 4, color: '737686' },
-    left: { style: BorderStyle.SINGLE, size: 4, color: '737686' },
-    right: { style: BorderStyle.SINGLE, size: 4, color: '737686' },
+    top: { style: BorderStyle.SINGLE, size: 6, color: 'C3C6D7' },
+    bottom: { style: BorderStyle.SINGLE, size: 6, color: 'C3C6D7' },
+    left: { style: BorderStyle.SINGLE, size: 6, color: 'C3C6D7' },
+    right: { style: BorderStyle.SINGLE, size: 6, color: 'C3C6D7' },
   };
 
   const createCell = (text, isHeader = false, widthPercent = 20) => {
@@ -20,15 +24,17 @@ export async function exportRubricToWord(rubric) {
       width: { size: widthPercent, type: WidthType.PERCENTAGE },
       shading: isHeader ? { fill: 'EAEDFF' } : undefined,
       borders: tableBorder,
+      margins: { top: 120, bottom: 120, left: 140, right: 140 },
       children: [
         new Paragraph({
           alignment: isHeader ? AlignmentType.CENTER : AlignmentType.LEFT,
+          spacing: { after: 60, before: 30 },
           children: [
             new TextRun({
               text: String(text || ''),
               bold: isHeader,
-              size: 19,
-              font: 'Plus Jakarta Sans',
+              size: isHeader ? 21 : 20, // 10.5pt / 10pt
+              font: isHeader ? PRIMARY_FONT : BODY_FONT,
               color: isHeader ? '004AC6' : '131B2E',
             }),
           ],
@@ -71,17 +77,31 @@ export async function exportRubricToWord(rubric) {
   (rubric.preguntasEvaluacion || []).forEach((q, idx) => {
     examParagraphs.push(
       new Paragraph({
-        text: `${idx + 1}. ${q.enunciado || 'Pregunta de evaluación'}`,
-        heading: HeadingLevel.HEADING_4,
-        spacing: { before: 180, after: 80 },
+        spacing: { before: 200, after: 80 },
+        children: [
+          new TextRun({
+            text: `${idx + 1}. ${q.enunciado || 'Pregunta de evaluación'}`,
+            bold: true,
+            size: 21,
+            font: PRIMARY_FONT,
+            color: '131B2E',
+          }),
+        ],
       })
     );
     (q.opciones || []).forEach((opt, oIdx) => {
       const letter = String.fromCharCode(65 + oIdx);
       examParagraphs.push(
         new Paragraph({
-          text: `   (${letter}) ${opt}`,
-          spacing: { after: 40 },
+          spacing: { after: 50 },
+          children: [
+            new TextRun({
+              text: `   (${letter}) ${opt}`,
+              size: 20,
+              font: BODY_FONT,
+              color: '434655',
+            }),
+          ],
         })
       );
     });
@@ -89,29 +109,61 @@ export async function exportRubricToWord(rubric) {
 
   const sections = [
     {
-      properties: {},
+      properties: {
+        page: {
+          margin: { top: 1000, bottom: 1000, left: 1000, right: 1000 },
+        },
+      },
       children: [
         new Paragraph({
-          text: `INSTRUMENTO DE EVALUACIÓN: ${rubric.titulo || 'Rúbrica Analítica'}`,
-          heading: HeadingLevel.TITLE,
           alignment: AlignmentType.CENTER,
-          spacing: { after: 150 },
+          spacing: { after: 120 },
+          children: [
+            new TextRun({
+              text: `INSTRUMENTO DE EVALUACIÓN: ${rubric.titulo || 'Rúbrica Analítica'}`,
+              bold: true,
+              size: 26,
+              font: PRIMARY_FONT,
+              color: '004AC6',
+            }),
+          ],
         }),
         new Paragraph({
-          text: `Área: ${rubric.area || ''}  |  Competencia: ${rubric.competencia || ''}  |  Grado: ${rubric.grado || ''}`,
           alignment: AlignmentType.CENTER,
-          spacing: { after: 300 },
+          spacing: { after: 260 },
+          children: [
+            new TextRun({
+              text: `Área: ${rubric.area || ''}  |  Grado: ${rubric.grado || ''}  |  Competencia: ${rubric.competencia || ''}`,
+              size: 20,
+              font: PRIMARY_FONT,
+              color: '737686',
+            }),
+          ],
         }),
         new Paragraph({
-          text: 'I. MATRIZ DE RÚBRICA ANALÍTICA DE DESEMPEÑO',
-          heading: HeadingLevel.HEADING_3,
-          spacing: { before: 150, after: 120 },
+          spacing: { before: 200, after: 140 },
+          children: [
+            new TextRun({
+              text: 'I. MATRIZ DE RÚBRICA ANALÍTICA DE EVALUACIÓN',
+              bold: true,
+              size: 22,
+              font: PRIMARY_FONT,
+              color: '004AC6',
+            }),
+          ],
         }),
         rubricTable,
         new Paragraph({
-          text: 'II. PRUEBA / CUESTIONARIO DE EVALUACIÓN DE LOS APRENDIZAJES',
-          heading: HeadingLevel.HEADING_3,
-          spacing: { before: 350, after: 150 },
+          spacing: { before: 320, after: 140 },
+          children: [
+            new TextRun({
+              text: 'II. PRUEBA DE EVALUACIÓN COGNITIVA Y FORMATIVA',
+              bold: true,
+              size: 22,
+              font: PRIMARY_FONT,
+              color: '004AC6',
+            }),
+          ],
         }),
         ...examParagraphs,
       ],
@@ -123,7 +175,7 @@ export async function exportRubricToWord(rubric) {
 }
 
 /**
- * Export Rubric & Evaluation to PDF
+ * Export Rubric & Evaluation to PDF using official 10pt / 11pt readable typography and autoTable
  */
 export function exportRubricToPdf(rubric) {
   const doc = new jsPDF({
@@ -132,90 +184,109 @@ export function exportRubricToPdf(rubric) {
     format: 'a4',
   });
 
-  const margin = 40;
-  let y = 50;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 36;
+  const contentWidth = pageWidth - margin * 2;
+  let currentY = 36;
 
+  // Title Header
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(14);
   doc.setTextColor(0, 74, 198);
-  doc.text(`RÚBRICA Y EVALUACIÓN: ${rubric.titulo || 'Sin Título'}`, margin, y);
-  y += 22;
+  const titleText = `RÚBRICA Y EVALUACIÓN CNEB: ${rubric.titulo || 'Sin Título'}`;
+  const wrappedTitle = doc.splitTextToSize(titleText, contentWidth);
+  doc.text(wrappedTitle, margin, currentY);
+  currentY += wrappedTitle.length * 17 + 4;
 
-  doc.setFontSize(10);
+  // Subtitle
   doc.setFont('Helvetica', 'normal');
-  doc.setTextColor(19, 27, 46);
-  doc.text(`Área: ${rubric.area || ''}  |  Competencia: ${rubric.competencia || ''}  |  Grado: ${rubric.grado || ''}`, margin, y);
-  y += 20;
+  doc.setFontSize(10);
+  doc.setTextColor(115, 118, 134);
+  const subtitleText = `Área: ${rubric.area || ''}  |  Grado: ${rubric.grado || ''}  |  Competencia: ${rubric.competencia || ''}`;
+  const wrappedSubtitle = doc.splitTextToSize(subtitleText, contentWidth);
+  doc.text(wrappedSubtitle, margin, currentY);
+  currentY += wrappedSubtitle.length * 13 + 16;
 
-  doc.setDrawColor(195, 198, 215);
-  doc.line(margin, y, 595 - margin, y);
-  y += 20;
-
-  // Criteria section
+  // ----------------------------------------------------
+  // I. MATRIZ DE RÚBRICA ANALÍTICA (autoTable structured)
+  // ----------------------------------------------------
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.setTextColor(0, 74, 198);
-  doc.text('I. CRITERIOS Y NIVELES DE LOGRO', margin, y);
-  y += 18;
+  doc.text('I. CRITERIOS Y NIVELES DE LOGRO CNEB', margin, currentY);
+  currentY += 8;
 
-  (rubric.criterios || []).forEach((c, idx) => {
-    if (y > 740) {
-      doc.addPage();
-      y = 50;
-    }
+  const tableBody = (rubric.criterios || []).map((c) => [
+    c.criterio,
+    c.inicio || 'En inicio',
+    c.proceso || 'En proceso',
+    c.logrado || 'Logrado',
+    c.destacado || 'Destacado',
+  ]);
 
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(0, 74, 198);
-    doc.text(`Criterio ${idx + 1}: ${c.criterio}`, margin, y);
-    y += 14;
-
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(19, 27, 46);
-    const linesLogrado = doc.splitTextToSize(`• Logro Esperado: ${c.logrado || ''}`, 595 - margin * 2);
-    doc.text(linesLogrado, margin + 10, y);
-    y += linesLogrado.length * 12 + 4;
-
-    const linesProceso = doc.splitTextToSize(`• En Proceso: ${c.proceso || ''}`, 595 - margin * 2);
-    doc.text(linesProceso, margin + 10, y);
-    y += linesProceso.length * 12 + 10;
+  autoTable(doc, {
+    startY: currentY,
+    margin: { left: margin, right: margin },
+    theme: 'grid',
+    head: [
+      [
+        { content: 'Criterios de Evaluación', styles: { halign: 'left', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 10 } },
+        { content: 'Inicio (C)', styles: { halign: 'center', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 9.5 } },
+        { content: 'Proceso (B)', styles: { halign: 'center', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 9.5 } },
+        { content: 'Logrado (A)', styles: { halign: 'center', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 9.5 } },
+        { content: 'Destacado (AD)', styles: { halign: 'center', fillColor: [234, 237, 255], textColor: [0, 74, 198], fontStyle: 'bold', fontSize: 9.5 } },
+      ],
+    ],
+    body: tableBody,
+    styles: {
+      font: 'Helvetica',
+      fontSize: 9.5, // 9.5pt readable official size
+      textColor: [19, 27, 46],
+      lineColor: [225, 228, 242],
+      lineWidth: 0.6,
+      cellPadding: 7,
+      overflow: 'linebreak',
+    },
   });
 
-  // Exam section
-  if (y > 700) {
+  currentY = doc.lastAutoTable.finalY + 22;
+
+  // ----------------------------------------------------
+  // II. PRUEBA DE EVALUACIÓN PARA ESTUDIANTES
+  // ----------------------------------------------------
+  if (currentY > 640) {
     doc.addPage();
-    y = 50;
+    currentY = 36;
   }
 
-  y += 15;
   doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11.5);
   doc.setTextColor(0, 74, 198);
-  doc.text('II. PRUEBA DE EVALUACIÓN PARA ESTUDIANTES', margin, y);
-  y += 20;
+  doc.text('II. PRUEBA DE EVALUACIÓN PARA ESTUDIANTES', margin, currentY);
+  currentY += 14;
 
   (rubric.preguntasEvaluacion || []).forEach((q, idx) => {
-    if (y > 720) {
+    if (currentY > 740) {
       doc.addPage();
-      y = 50;
+      currentY = 36;
     }
 
     doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(10.5); // Official 10.5pt question text
     doc.setTextColor(19, 27, 46);
-    const qLines = doc.splitTextToSize(`${idx + 1}. ${q.enunciado || ''}`, 595 - margin * 2);
-    doc.text(qLines, margin, y);
-    y += qLines.length * 13 + 6;
+    const qLines = doc.splitTextToSize(`${idx + 1}. ${q.enunciado || ''}`, contentWidth);
+    doc.text(qLines, margin, currentY);
+    currentY += qLines.length * 14 + 6;
 
     doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(10); // Official 10pt options text
     (q.opciones || []).forEach((opt, oIdx) => {
       const letter = String.fromCharCode(65 + oIdx);
-      doc.text(`   ${letter}) ${opt}`, margin + 10, y);
-      y += 14;
+      const optLines = doc.splitTextToSize(`   ${letter}) ${opt}`, contentWidth - 16);
+      doc.text(optLines, margin + 12, currentY);
+      currentY += optLines.length * 13 + 4;
     });
-    y += 10;
+    currentY += 8;
   });
 
   return doc.output('blob');
