@@ -116,14 +116,46 @@ export async function renderCertificateToCanvas(template, studentRecord, verific
         ctx.stroke();
       }
     } else if (elem.type === 'qr') {
+      const qrW = elem.width || 110;
+      const qrH = elem.height || 110;
+      const bgColor = elem.bgColor || '#ffffff';
+      const frameStyle = elem.frameStyle || 'card';
+
+      // Draw background if not clean
+      if (frameStyle !== 'clean') {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(elem.x, elem.y, qrW, qrH);
+
+        if (frameStyle === 'border') {
+          ctx.strokeStyle = elem.color || '#004ac6';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(elem.x, elem.y, qrW, qrH);
+        } else {
+          // Card style border
+          ctx.strokeStyle = '#c3c6d7';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(elem.x, elem.y, qrW, qrH);
+        }
+      }
+
+      const qrInnerSize = frameStyle !== 'clean' ? Math.max(30, qrW - 20) : qrW;
+      const qrOffsetX = elem.x + (qrW - qrInnerSize) / 2;
+      const qrOffsetY = elem.y + 6;
+
       if (qrImage) {
-        ctx.drawImage(qrImage, elem.x, elem.y, elem.width || 100, elem.height || 100);
+        ctx.drawImage(qrImage, qrOffsetX, qrOffsetY, qrInnerSize, qrInnerSize);
       } else {
         // Placeholder
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(elem.x, elem.y, elem.width || 100, elem.height || 100);
-        ctx.strokeStyle = '#737686';
-        ctx.strokeRect(elem.x, elem.y, elem.width || 100, elem.height || 100);
+        ctx.fillStyle = elem.color || '#004ac6';
+        ctx.fillRect(qrOffsetX, qrOffsetY, qrInnerSize, qrInnerSize);
+      }
+
+      // Render bottom label if card style
+      if (frameStyle === 'card') {
+        ctx.font = 'bold 8px "Plus Jakarta Sans", sans-serif';
+        ctx.fillStyle = elem.color || '#004ac6';
+        ctx.textAlign = 'center';
+        ctx.fillText('CÓDIGO QR', elem.x + qrW / 2, elem.y + qrH - 8);
       }
     } else if (elem.type === 'image' && elem.src) {
       try {

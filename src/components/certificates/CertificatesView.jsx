@@ -82,7 +82,7 @@ export const CertificatesView = () => {
     setEmissions(getCertEmissions());
   };
 
-  // Canvas Dragging handler
+  // Canvas Dragging handler with high-frequency local state (no immediate disk writes on every mouse move)
   const [dragInfo, setDragInfo] = useState(null);
   const canvasRef = useRef(null);
 
@@ -106,20 +106,30 @@ export const CertificatesView = () => {
     const dx = e.clientX - dragInfo.startX;
     const dy = e.clientY - dragInfo.startY;
 
-    const newX = Math.max(0, Math.min(activeTemplate.width - 60, dragInfo.initX + dx));
+    const newX = Math.max(0, Math.min(activeTemplate.width - 50, dragInfo.initX + dx));
     const newY = Math.max(0, Math.min(activeTemplate.height - 30, dragInfo.initY + dy));
 
-    const updatedElements = activeTemplate.elements.map((el) =>
-      el.id === dragInfo.elemId ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el
+    // Fast local memory update during drag
+    setTemplates((prev) =>
+      prev.map((t) => {
+        if (t.id !== activeTemplate.id) return t;
+        return {
+          ...t,
+          elements: t.elements.map((el) =>
+            el.id === dragInfo.elemId ? { ...el, x: Math.round(newX), y: Math.round(newY) } : el
+          ),
+        };
+      })
     );
-
-    const updatedTemplate = { ...activeTemplate, elements: updatedElements };
-    saveCertTemplate(updatedTemplate);
-    setTemplates(getCertTemplates());
   };
 
   const handleMouseUpCanvas = () => {
-    setDragInfo(null);
+    if (dragInfo) {
+      // Save permanently to storage only once on mouse release
+      const currentActive = templates.find((t) => t.id === selectedTemplateId) || activeTemplate;
+      saveCertTemplate(currentActive);
+      setDragInfo(null);
+    }
   };
 
   // Update element property
@@ -129,7 +139,7 @@ export const CertificatesView = () => {
     );
     const updatedTemplate = { ...activeTemplate, elements: updatedElements };
     saveCertTemplate(updatedTemplate);
-    setTemplates(getCertTemplates());
+    setTemplates((prev) => prev.map((t) => (t.id === updatedTemplate.id ? updatedTemplate : t)));
   };
 
   // Add new element
@@ -596,6 +606,123 @@ export const CertificatesView = () => {
                 </div>
               </div>
             )}
+
+            {/* Selected Element Toolbar for QR Code */}
+            {selectedElement && selectedElement.type === 'qr' && (
+              <div className="p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant/40 dark:border-slate-800 space-y-3 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <QrCode className="w-4 h-4 text-primary" />
+                    Personalizar Código QR
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const filtered = activeTemplate.elements.filter((el) => el.id !== selectedElement.id);
+                      const updated = { ...activeTemplate, elements: filtered };
+                      saveCertTemplate(updated);
+                      setTemplates(getCertTemplates());
+                      setSelectedElementId(null);
+                      showToast('Código QR eliminado', 'info');
+                    }}
+                    className="p-1 text-rose-500 hover:bg-rose-500/10 rounded"
+                    title="Eliminar QR"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* QR Dimensions (Width / Size) */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] text-on-surface-variant">Dimensiones del QR</label>
+                    <span className="text-[10px] font-mono font-bold text-primary">{selectedElement.width || 110}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={60}
+                    max={220}
+                    step={5}
+                    value={selectedElement.width || 110}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      updateElementProp(selectedElement.id, { width: val, height: val });
+                    }}
+                    className="w-full h-1.5 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-[9px] text-outline mt-0.5">
+                    <span>Pequeño (60px)</span>
+                    <span>Mediano (110px)</span>
+                    <span>Grande (220px)</span>
+                  </div>
+                </div>
+
+                {/* QR Colors: Dark QR & Light Background */}
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-on-surface-variant block mb-1">Color del QR</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={selectedElement.color || '#004ac6'}
+                        onChange={(e) => updateElementProp(selectedElement.id, { color: e.target.value })}
+                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <span className="text-[10px] font-mono uppercase text-outline">{selectedElement.color || '#004ac6'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-on-surface-variant block mb-1">Fondo de Tarjeta</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={selectedElement.bgColor || '#ffffff'}
+                        onChange={(e) => updateElementProp(selectedElement.id, { bgColor: e.target.value })}
+                        className="w-8 h-8 rounded-lg cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <span className="text-[10px] font-mono uppercase text-outline">{selectedElement.bgColor || '#ffffff'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* QR Border Style */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-on-surface-variant block">Estilo del Marco del QR</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { id: 'card', label: 'Tarjeta' },
+                      { id: 'border', label: 'Borde Simple' },
+                      { id: 'clean', label: 'Sin Marco' },
+                    ].map((st) => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => updateElementProp(selectedElement.id, { frameStyle: st.id })}
+                        className={`py-1 px-1.5 text-[10px] rounded-lg font-semibold border transition-all ${
+                          (selectedElement.frameStyle || 'card') === st.id
+                            ? 'bg-primary text-on-primary border-primary'
+                            : 'border-outline-variant/30 text-on-surface hover:bg-surface-container-high'
+                        }`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subtitle text under QR */}
+                <div>
+                  <label className="text-[10px] text-on-surface-variant block mb-1">Texto Inferior</label>
+                  <input
+                    type="text"
+                    value={selectedElement.subText !== undefined ? selectedElement.subText : 'Escaneo de Autenticidad'}
+                    onChange={(e) => updateElementProp(selectedElement.id, { subText: e.target.value })}
+                    placeholder="Ej: Validación Digital"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 text-xs text-on-surface outline-none"
+                  />
+                </div>
+              </div>
+            )}
           </aside>
 
           {/* Interactive Certificate Canvas Stage */}
@@ -671,10 +798,37 @@ export const CertificatesView = () => {
                     {elem.type === 'text' && <span>{displayText}</span>}
 
                     {elem.type === 'qr' && (
-                      <div className="p-2 bg-white rounded-lg border border-outline-variant/30 flex flex-col items-center justify-center text-center shadow-sm">
-                        <QrCode className="w-16 h-16 text-primary" />
-                        <span className="text-[9px] font-mono text-slate-700 font-bold mt-1">CÓDIGO QR ÚNICO</span>
-                        <span className="text-[8px] text-slate-500">Escaneo de Autenticidad</span>
+                      <div
+                        style={{
+                          width: `${elem.width || 110}px`,
+                          backgroundColor: elem.bgColor || '#ffffff',
+                        }}
+                        className={`p-2 rounded-xl flex flex-col items-center justify-center text-center transition-all ${
+                          elem.frameStyle === 'border'
+                            ? 'border-2 border-primary/40 shadow-none'
+                            : elem.frameStyle === 'clean'
+                            ? 'border-0 shadow-none bg-transparent'
+                            : 'border border-outline-variant/30 shadow-md'
+                        }`}
+                      >
+                        <QrCode
+                          style={{
+                            color: elem.color || '#004ac6',
+                            width: `${Math.max(40, (elem.width || 110) - 30)}px`,
+                            height: `${Math.max(40, (elem.width || 110) - 30)}px`,
+                          }}
+                        />
+                        <span
+                          style={{ color: elem.color || '#004ac6' }}
+                          className="text-[9px] font-mono font-bold mt-1 tracking-wider leading-none"
+                        >
+                          CÓDIGO QR
+                        </span>
+                        {elem.frameStyle !== 'clean' && (
+                          <span className="text-[7.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                            {elem.subText !== undefined ? elem.subText : 'Escaneo de Autenticidad'}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
