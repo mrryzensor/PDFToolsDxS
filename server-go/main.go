@@ -1,0 +1,538 @@
+﻿package main
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/skip2/go-qrcode"
+	"go.mau.fi/whatsmeow"
+	waProto "go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/store/sqlstore"
+	"go.mau.fi/whatsmeow/types"
+	"go.mau.fi/whatsmeow/types/events"
+	waLog "go.mau.fi/whatsmeow/util/log"
+	"google.golang.org/protobuf/proto"
+	_ "modernc.org/sqlite"
+)
+
+type Config struct {
+	AllowGroups    bool     `json:"allowGroups"`    // Default false
+	AllowBroadcast bool     `json:"allowBroadcast"` // Default false
+	GeminiKey      string   `json:"geminiKey"`
+	Models         []string `json:"models"`
+	AutoReply      bool     `json:"autoReply"`      // Chatbot toggle
+}
+
+type WhatsAppServer struct {
+	client     *whatsmeow.Client
+	container  *sqlstore.Container
+	config     Config
+	configLock sync.RWMutex
+	qrCode     string
+	qrLock     sync.RWMutex
+	status     string
+	statusLock sync.RWMutex
+}
+
+var serverInstance *WhatsAppServer
+
+func NewWhatsAppServer() *WhatsAppServer {
+	cfg := Config{
+		AllowGroups:    false,
+		AllowBroadcast: false,
+		AutoReply:      true,
+		Models: []string{
+			"gemini-3.5-flash-lite",
+			"gemini-3.5-flash",
+			"gemini-2.5-flash-lite",
+			"gemini-2.5-flash",
+			"gemini-2.0-flash",
+			"gemini-1.5-flash",
+		},
+	}
+
+	// Try loading saved config
+	if data, err := os.ReadFile("whatsapp_config.json"); err == nil {
+		_ = json.Unmarshal(data, &cfg)
+	}
+
+	return &WhatsAppServer{
+		config: cfg,
+		status: "disconnected",
+	}
+}
+
+func (s *WhatsAppServer) SaveConfig() {
+	s.configLock.RLock()
+	defer s.configLock.RUnlock()
+	bytes, _ := json.MarshalIndent(s.config, "", "  ")
+	_ = os.WriteFile("whatsapp_config.json", bytes, 0644)
+}
+
+func (s *WhatsAppServer) InitWhatsApp() error {
+	dbLog := waLog.Stdout("Database", "ERROR", true)
+	ctx := context.Background()
+	container, err := sqlstore.New(ctx, "sqlite", "file:whatsapp_session.db?_pragma=foreign_keys(1)", dbLog)
+	if err != nil {
+		return fmt.Errorf("error inicializando store: %w", err)
+	}
+	s.container = container
+
+	deviceStore, err := container.GetFirstDevice(ctx)
+	if err != nil {
+		return fmt.Errorf("error obteniendo dispositivo: %w", err)
+	}
+
+	clientLog := waLog.Stdout("WhatsApp", "INFO", true)
+	client := whatsmeow.NewClient(deviceStore, clientLog)
+	s.client = client
+
+	client.AddEventHandler(s.eventHandler)
+
+	if client.Store.ID == nil {
+		// New login required
+		qrChan, _ := client.GetQRChannel(ctx)
+		err = client.Connect()
+		if err != nil {
+			return fmt.Errorf("error conectando: %w", err)
+		}
+
+		go func() {
+			for evt := range qrChan {
+				if evt.Event == "code" {
+					// Generate base64 png
+					png, err := qrcode.Encode(evt.Code, qrcode.Medium, 256)
+					if err == nil {
+						s.qrLock.Lock()
+						s.qrCode = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+						s.qrLock.Unlock()
+					}
+					s.statusLock.Lock()
+					s.status = "scan_qr"
+					s.statusLock.Unlock()
+				} else {
+					s.statusLock.Lock()
+					s.status = evt.Event
+					s.statusLock.Unlock()
+				}
+			}
+		}()
+	} else {
+		// Existing session
+		err = client.Connect()
+		if err != nil {
+			return fmt.Errorf("error reconectando: %w", err)
+		}
+		s.statusLock.Lock()
+		s.status = "connected"
+		s.statusLock.Unlock()
+	}
+
+	return nil
+}
+
+func (s *WhatsAppServer) eventHandler(evt interface{}) {
+	switch v := evt.(type) {
+	case *events.Connected:
+		s.statusLock.Lock()
+		s.status = "connected"
+		s.qrCode = ""
+		s.statusLock.Unlock()
+		log.Println("[WhatsApp] Conectado exitosamente!")
+
+	case *events.LoggedOut:
+		s.statusLock.Lock()
+		s.status = "logged_out"
+		s.statusLock.Unlock()
+		log.Println("[WhatsApp] Sesi�n cerrada.")
+
+	case *events.Message:
+		go s.handleIncomingMessage(v)
+	}
+}
+
+func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
+	// Don't reply to self messages
+	if msg.Info.IsFromMe {
+		return
+	}
+
+	// Group and Broadcast filter (Default false / disabled)
+	s.configLock.RLock()
+	allowGroups := s.config.AllowGroups
+	allowBroadcast := s.config.AllowBroadcast
+	autoReply := s.config.AutoReply
+	apiKey := s.config.GeminiKey
+	models := s.config.Models
+	s.configLock.RUnlock()
+
+	if !autoReply {
+		return
+	}
+
+	isGroup := msg.Info.IsGroup
+	if isGroup && !allowGroups {
+		return // Ignore group messages per user setting
+	}
+
+	isBroadcast := strings.HasSuffix(msg.Info.Chat.String(), "@broadcast")
+	if isBroadcast && !allowBroadcast {
+		return // Ignore broadcasts per user setting
+	}
+
+	text := ""
+	if msg.Message.Conversation != nil {
+		text = *msg.Message.Conversation
+	} else if msg.Message.ExtendedTextMessage != nil && msg.Message.ExtendedTextMessage.Text != nil {
+		text = *msg.Message.ExtendedTextMessage.Text
+	}
+
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+
+	log.Printf("[WhatsApp In] De: %s | Mensaje: %s\n", msg.Info.Sender.User, text)
+
+	// If no Gemini Key is configured, notify politely
+	if apiKey == "" {
+		s.sendTextMessage(msg.Info.Chat, "Hola! El chatbot est� activo pero a�n no tiene configurada su Gemini API Key en el panel de DocuCraft Pro.")
+		return
+	}
+
+	// Check if user is asking for a learning session / sesion de aprendizaje
+	lower := strings.ToLower(text)
+	if strings.Contains(lower, "sesion") || strings.Contains(lower, "sesi�n") || strings.Contains(lower, "planifica") || strings.Contains(lower, "clase") {
+		s.sendTextMessage(msg.Info.Chat, "�Entendido! Dame un momento, estoy dise�ando tu sesi�n de aprendizaje CNEB y generando el PDF...")
+
+		// Generate session JSON via Gemini
+		systemPrompt := `Eres un especialista pedag�gico del Ministerio de Educaci�n (MINEDU) Per� experto en el Curr�culo Nacional (CNEB).
+Elabora una sesi�n pedag�gica en formato JSON estricto:
+{
+  "titulo": "T�tulo de la sesi�n",
+  "numeroSesion": "01",
+  "institucion": "I.E. Emblem�tica",
+  "docente": "Docente Virtual DocuCraft",
+  "area": "Ciencia y Tecnolog�a / Comunicaci�n / Matem�tica",
+  "grado": "5� Grado de Primaria",
+  "seccion": "A",
+  "duracion": 90,
+  "competencia": "Competencia CNEB",
+  "capacidades": ["Capacidad 1", "Capacidad 2"],
+  "desempenos": "Desempe�os precisados del grado",
+  "evidencia": "Evidencia de aprendizaje",
+  "instrumentoEvaluacion": "R�brica anal�tica",
+  "secuenciaInicio": "Actividades de inicio...",
+  "tiempoInicio": 15,
+  "secuenciaDesarrollo": "Actividades de desarrollo...",
+  "tiempoDesarrollo": 60,
+  "secuenciaCierre": "Metacognici�n y cierre...",
+  "tiempoCierre": 15,
+  "recursosMateriales": "Materiales did�cticos"
+}`
+		jsonText, _, err := CallGemini(apiKey, models, systemPrompt, text, true)
+		if err == nil {
+			cleanJSON := strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(jsonText, "```json", ""), "```", ""))
+			var sData SessionPedagogicaData
+			if jsonErr := json.Unmarshal([]byte(cleanJSON), &sData); jsonErr == nil {
+				pdfBytes, pdfErr := GenerateSessionPDF(&sData)
+				if pdfErr == nil && len(pdfBytes) > 0 {
+					filename := fmt.Sprintf("Sesion_%s.pdf", strings.ReplaceAll(sData.Titulo, " ", "_"))
+					s.sendDocument(msg.Info.Chat, pdfBytes, filename, "application/pdf", fmt.Sprintf("Aqu� tienes tu sesi�n pedag�gica lista en PDF: *%s*", sData.Titulo))
+					return
+				}
+			}
+		}
+	}
+
+	// Natural chat conversation: Short, warm, direct
+	chatSystemPrompt := `Eres el asistente virtual inteligente de DocuCraft Pro en WhatsApp.
+REGLAS VITALES DE RESPUESTA:
+1. Responde SIEMPRE de forma sumamente corta, concisa y personal (m�ximo 2 a 3 oraciones breves).
+2. Tono cercano, amable y profesional.
+3. No des introducciones largas ni rodeos.
+4. Si te piden una sesi�n pedag�gica, diles que con gusto la preparas y p�deles el tema y grado escolar.
+5. Puedes ayudar con: Sesiones CNEB, Certificados con QR, R�bricas y gesti�n de PDFs.`
+
+	respText, _, err := CallGemini(apiKey, models, chatSystemPrompt, text, false)
+	if err != nil {
+		s.sendTextMessage(msg.Info.Chat, "Hola! Tuve una breve pausa con la IA, por favor rep�teme tu consulta.")
+		return
+	}
+
+	s.sendTextMessage(msg.Info.Chat, respText)
+}
+
+func (s *WhatsAppServer) sendTextMessage(to types.JID, text string) {
+	if s.client == nil || !s.client.IsConnected() {
+		return
+	}
+	msg := &waProto.Message{
+		Conversation: proto.String(text),
+	}
+	_, err := s.client.SendMessage(context.Background(), to, msg)
+	if err != nil {
+		log.Printf("[WhatsApp] Error enviando mensaje a %s: %v\n", to, err)
+	}
+}
+
+func (s *WhatsAppServer) sendDocument(to types.JID, data []byte, filename, mime, caption string) {
+	if s.client == nil || !s.client.IsConnected() {
+		return
+	}
+
+	uploaded, err := s.client.Upload(context.Background(), data, whatsmeow.MediaDocument)
+	if err != nil {
+		log.Printf("[WhatsApp] Error subiendo documento: %v\n", err)
+		return
+	}
+
+	msg := &waProto.Message{
+		DocumentMessage: &waProto.DocumentMessage{
+			URL: proto.String(uploaded.URL),
+			DirectPath:    proto.String(uploaded.DirectPath),
+			MediaKey:      uploaded.MediaKey,
+			FileEncSHA256: uploaded.FileEncSHA256,
+			FileSHA256: uploaded.FileSHA256,
+			FileLength:    proto.Uint64(uint64(len(data))),
+			Mimetype: proto.String(mime),
+			Title:         proto.String(filename),
+			FileName:      proto.String(filename),
+			Caption:       proto.String(caption),
+		},
+	}
+	_, err = s.client.SendMessage(context.Background(), to, msg)
+	if err != nil {
+		log.Printf("[WhatsApp] Error enviando documento: %v\n", err)
+	}
+}
+
+// ---------------- REST API HANDLERS ----------------
+
+func enableCORS(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+}
+
+func handleStatus(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	s.statusLock.RLock()
+	st := s.status
+	s.statusLock.RUnlock()
+
+	s.qrLock.RLock()
+	qr := s.qrCode
+	s.qrLock.RUnlock()
+
+	s.configLock.RLock()
+	cfg := s.config
+	s.configLock.RUnlock()
+
+	connected := s.client != nil && s.client.IsConnected()
+	phone := ""
+	if s.client != nil && s.client.Store.ID != nil {
+		phone = s.client.Store.ID.User
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":    st,
+		"connected": connected,
+		"phone":     phone,
+		"qr":        qr,
+		"config":    cfg,
+	})
+}
+
+func handleConfig(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	if r.Method == "POST" {
+		var newCfg Config
+		if err := json.NewDecoder(r.Body).Decode(&newCfg); err == nil {
+			s.configLock.Lock()
+			s.config.AllowGroups = newCfg.AllowGroups
+			s.config.AllowBroadcast = newCfg.AllowBroadcast
+			s.config.AutoReply = newCfg.AutoReply
+			if newCfg.GeminiKey != "" {
+				s.config.GeminiKey = newCfg.GeminiKey
+			}
+			s.configLock.Unlock()
+			s.SaveConfig()
+		}
+	}
+
+	s.configLock.RLock()
+	cfg := s.config
+	s.configLock.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(cfg)
+}
+
+func handleGetGroups(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	if s.client == nil || !s.client.IsConnected() {
+		http.Error(w, `{"error":"WhatsApp no conectado"}`, http.StatusBadRequest)
+		return
+	}
+
+	groups, err := s.client.GetJoinedGroups(context.Background())
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	type GroupItem struct {
+		JID          string `json:"jid"`
+		Name         string `json:"name"`
+		Participants int    `json:"participants"`
+	}
+
+	var res []GroupItem
+	for _, g := range groups {
+		res = append(res, GroupItem{
+			JID:          g.JID.String(),
+			Name:         g.Name,
+			Participants: len(g.Participants),
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(res)
+}
+
+type SendMessageRequest struct {
+	Recipients []string `json:"recipients"` // Numbers or JIDs
+	Message    string   `json:"message"`
+	FileName   string   `json:"fileName,omitempty"`
+	FileData   string   `json:"fileData,omitempty"` // base64
+	MimeType   string   `json:"mimeType,omitempty"`
+}
+
+func handleSendMessage(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	if s.client == nil || !s.client.IsConnected() {
+		http.Error(w, `{"error":"WhatsApp no conectado"}`, http.StatusBadRequest)
+		return
+	}
+
+	var req SendMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"payload invalido"}`, http.StatusBadRequest)
+		return
+	}
+
+	sentCount := 0
+	var fileBytes []byte
+	if req.FileData != "" {
+		// Clean base64 header if present
+		cleanB64 := req.FileData
+		if idx := strings.Index(cleanB64, ","); idx != -1 {
+			cleanB64 = cleanB64[idx+1:]
+		}
+		fileBytes, _ = base64.StdEncoding.DecodeString(cleanB64)
+	}
+
+	for _, recipient := range req.Recipients {
+		rec := strings.TrimSpace(recipient)
+		if rec == "" {
+			continue
+		}
+
+		var jid types.JID
+		if strings.Contains(rec, "@") {
+			jid, _ = types.ParseJID(rec)
+		} else {
+			cleanNum := strings.ReplaceAll(strings.ReplaceAll(rec, "+", ""), " ", "")
+			jid = types.NewJID(cleanNum, types.DefaultUserServer)
+		}
+
+		if len(fileBytes) > 0 {
+			mime := req.MimeType
+			if mime == "" {
+				mime = "application/pdf"
+			}
+			s.sendDocument(jid, fileBytes, req.FileName, mime, req.Message)
+		} else {
+			s.sendTextMessage(jid, req.Message)
+		}
+
+		sentCount++
+		// Gentle throttle for mass messaging
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":   true,
+		"sentCount": sentCount,
+	})
+}
+
+func handleLogout(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	if s.client != nil {
+		s.client.Logout(context.Background())
+		s.statusLock.Lock()
+		s.status = "disconnected"
+		s.qrCode = ""
+		s.statusLock.Unlock()
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+func main() {
+	serverInstance = NewWhatsAppServer()
+	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
+	if err := serverInstance.InitWhatsApp(); err != nil {
+		log.Printf("[WhatsApp Server Go] Aviso al inicializar: %v\n", err)
+	}
+
+	http.HandleFunc("/api/whatsapp/status", handleStatus)
+	http.HandleFunc("/api/whatsapp/config", handleConfig)
+	http.HandleFunc("/api/whatsapp/groups", handleGetGroups)
+	http.HandleFunc("/api/whatsapp/send", handleSendMessage)
+	http.HandleFunc("/api/whatsapp/logout", handleLogout)
+
+	port := 8089
+	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+		log.Fatalf("Error iniciando servidor Go: %v", err)
+	}
+}

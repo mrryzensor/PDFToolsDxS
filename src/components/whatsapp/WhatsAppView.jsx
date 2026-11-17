@@ -1,0 +1,662 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  MessageSquare, Send, Users, QrCode, RefreshCw, Power, 
+  Settings2, Paperclip, CheckCircle2, AlertCircle, FileText, 
+  Bot, ShieldAlert, Sparkles, Phone, Upload, Trash2, Check,
+  Radio, X
+} from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
+import { getStoredGeminiKeys } from '../../utils/storage';
+
+const API_BASE = 'http://localhost:8089';
+
+export const WhatsAppView = ({ onOpenApiKeysModal }) => {
+  const { showToast } = useToast();
+  
+  // Connection state
+  const [statusData, setStatusData] = useState({
+    status: 'checking',
+    connected: false,
+    phone: '',
+    qr: '',
+    config: {
+      allowGroups: false,
+      allowBroadcast: false,
+      autoReply: true,
+      geminiKey: '',
+    },
+  });
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [serverOnline, setServerOnline] = useState(true);
+
+  // Group extraction state
+  const [groups, setGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  // Send message form
+  const [recipientInput, setRecipientInput] = useState('');
+  const [selectedGroups, setSelectedGroups] = useState([]);
+  const [messageText, setMessageText] = useState('');
+  const [attachment, setAttachment] = useState(null); // { name, data, type }
+  const [isSending, setIsSending] = useState(false);
+
+  // Tab: 'send' | 'groups' | 'bot_config'
+  const [subTab, setSubTab] = useState('send');
+
+  // Fetch status from Go backend
+  const fetchStatus = async () => {
+    try {
+      setLoadingStatus(true);
+      const res = await fetch(`${API_BASE}/api/whatsapp/status`);
+      if (!res.ok) throw new Error('Servidor Go no responde');
+      const data = await res.json();
+      setStatusData(data);
+      setServerOnline(true);
+    } catch (err) {
+      setServerOnline(false);
+      setStatusData((prev) => ({ ...prev, status: 'offline', connected: false }));
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Sync Gemini key with Go backend
+  useEffect(() => {
+    const keys = getStoredGeminiKeys();
+    if (keys && keys.length > 0 && statusData.config && !statusData.config.geminiKey) {
+      const activeKey = keys[0].key;
+      updateConfig({ geminiKey: activeKey });
+    }
+  }, [statusData.config]);
+
+  // Update backend config
+  const updateConfig = async (newConfigPartial) => {
+    try {
+      const payload = {
+        ...statusData.config,
+        ...newConfigPartial,
+      };
+      const res = await fetch(`${API_BASE}/api/whatsapp/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setStatusData((prev) => ({ ...prev, config: saved }));
+        showToast('Configuración de WhatsApp guardada', 'success');
+      }
+    } catch (err) {
+      showToast('Error guardando configuración: ' + err.message, 'error');
+    }
+  };
+
+  // Fetch joined groups from Go backend
+  const handleFetchGroups = async () => {
+    if (!statusData.connected) {
+      showToast('Conecta WhatsApp primero escaneando el código QR', 'warning');
+      return;
+    }
+    try {
+      setLoadingGroups(true);
+      const res = await fetch(`${API_BASE}/api/whatsapp/groups`);
+      if (!res.ok) throw new Error('Error al consultar grupos');
+      const data = await res.json();
+      setGroups(data || []);
+      showToast(`¡Se extrajeron ${data?.length || 0} grupos de WhatsApp!`, 'success');
+    } catch (err) {
+      showToast('Error extrayendo grupos: ' + err.message, 'error');
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  // Toggle group selection for messaging
+  const toggleGroupSelection = (jid) => {
+    if (selectedGroups.includes(jid)) {
+      setSelectedGroups(selectedGroups.filter((g) => g !== jid));
+    } else {
+      setSelectedGroups([...selectedGroups, jid]);
+    }
+  };
+
+  // File attachment handler
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 25 * 1024 * 1024) {
+      showToast('El archivo supera los 25 MB permitidos por WhatsApp', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachment({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        data: reader.result,
+        size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      });
+      showToast(`Archivo adjunto: ${file.name}`, 'info');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Send message or mass campaign
+  const handleSendMessage = async () => {
+    if (!statusData.connected) {
+      showToast('Debes vincular WhatsApp escaneando el código QR primero', 'warning');
+      return;
+    }
+
+    // Combine recipients from text input and selected groups
+    const rawNumbers = recipientInput
+      .split('\n')
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
+
+    const allRecipients = Array.from(new Set([...rawNumbers, ...selectedGroups]));
+
+    if (allRecipients.length === 0) {
+      showToast('Agrega al menos un número telefónico o selecciona un grupo', 'warning');
+      return;
+    }
+
+    if (!messageText.trim() && !attachment) {
+      showToast('Escribe un mensaje o adjunta un archivo', 'warning');
+      return;
+    }
+
+    try {
+      setIsSending(true);
+      showToast(`Enviando a ${allRecipients.length} destinatario(s)...`, 'info');
+
+      const payload = {
+        recipients: allRecipients,
+        message: messageText.trim(),
+        fileName: attachment ? attachment.name : '',
+        fileData: attachment ? attachment.data : '',
+        mimeType: attachment ? attachment.type : '',
+      };
+
+      const res = await fetch(`${API_BASE}/api/whatsapp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error('Error al procesar envío');
+      const data = await res.json();
+
+      showToast(`¡Mensaje(s) enviado(s) exitosamente a ${data.sentCount} destinatario(s)!`, 'success');
+      setMessageText('');
+      setAttachment(null);
+      setSelectedGroups([]);
+    } catch (err) {
+      showToast('Error enviando mensaje: ' + err.message, 'error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Logout WhatsApp
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/api/whatsapp/logout`, { method: 'POST' });
+      fetchStatus();
+      showToast('Sesión de WhatsApp cerrada', 'info');
+    } catch (err) {
+      showToast('Error cerrando sesión: ' + err.message, 'error');
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-surface text-on-surface">
+      {/* Sidebar: Status & Connection */}
+      <aside className="w-full md:w-80 bg-surface-container-low dark:bg-slate-900 border-r border-outline-variant/30 dark:border-slate-800 p-5 flex flex-col gap-4 overflow-y-auto shrink-0 select-none">
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-base font-headline font-bold text-on-surface flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-emerald-500" />
+              WhatsApp Suite (Go)
+            </h2>
+            <button
+              type="button"
+              onClick={fetchStatus}
+              disabled={loadingStatus}
+              className="p-1.5 rounded-lg border border-outline-variant/30 hover:bg-surface-container-high transition-colors"
+              title="Actualizar estado"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingStatus ? 'animate-spin text-primary' : ''}`} />
+            </button>
+          </div>
+          <p className="text-[11px] text-on-surface-variant">
+            Motor ultra-rápido en <strong>Go (whatsmeow)</strong> con IA Gemini para respuestas inteligentes cortas y envíos masivos.
+          </p>
+        </div>
+
+        {/* Server Status Indicator */}
+        {!serverOnline ? (
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Servidor Go Inactivo</span>
+            </div>
+            <p className="text-[11px] leading-relaxed">
+              Para activar el servicio de WhatsApp, inicia el servidor en la carpeta <code>server-go</code> ejecutando:
+            </p>
+            <div className="p-2 rounded bg-slate-950 text-slate-100 font-mono text-[10px]">
+              cd server-go && go run .
+            </div>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant/30 dark:border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-on-surface-variant">Estado del Servicio</span>
+              {statusData.connected ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Conectado
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <Radio className="w-3 h-3 animate-pulse" />
+                  Esperando QR
+                </span>
+              )}
+            </div>
+
+            {statusData.connected ? (
+              <div className="space-y-2">
+                <div className="p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs">
+                  <div className="text-[10px] text-outline">Número Vinculado:</div>
+                  <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    +{statusData.phone}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full py-1.5 px-3 rounded-lg border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Power className="w-3.5 h-3.5" />
+                  <span>Desvincular WhatsApp</span>
+                </button>
+              </div>
+            ) : statusData.qr ? (
+              <div className="flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-outline-variant/30 text-center">
+                <img src={statusData.qr} alt="Código QR WhatsApp" className="w-44 h-44 rounded-lg" />
+                <span className="text-[10px] font-mono text-slate-800 font-bold mt-2">
+                  ESCANEA CON TU WHATSAPP
+                </span>
+                <span className="text-[9px] text-slate-500">
+                  Abre WhatsApp ➔ Dispositivos vinculados ➔ Vincular dispositivo
+                </span>
+              </div>
+            ) : (
+              <div className="p-4 text-center text-xs text-outline">
+                Iniciando sesión segura...
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* AI & Chatbot Quick Toggles */}
+        <div className="p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant/30 dark:border-slate-800 space-y-3">
+          <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+            <Bot className="w-4 h-4 text-primary" />
+            Control de Respuestas Automáticas
+          </span>
+
+          <label className="flex items-center justify-between cursor-pointer text-xs">
+            <span className="text-on-surface-variant">Chatbot Inteligente IA:</span>
+            <input
+              type="checkbox"
+              checked={statusData.config?.autoReply ?? true}
+              onChange={(e) => updateConfig({ autoReply: e.target.checked })}
+              className="accent-primary w-4 h-4 cursor-pointer"
+            />
+          </label>
+
+          <label className="flex items-center justify-between cursor-pointer text-xs">
+            <span className="text-on-surface-variant">Responder en Grupos:</span>
+            <input
+              type="checkbox"
+              checked={statusData.config?.allowGroups ?? false}
+              onChange={(e) => updateConfig({ allowGroups: e.target.checked })}
+              className="accent-primary w-4 h-4 cursor-pointer"
+            />
+          </label>
+
+          <label className="flex items-center justify-between cursor-pointer text-xs">
+            <span className="text-on-surface-variant">Responder en Difusiones:</span>
+            <input
+              type="checkbox"
+              checked={statusData.config?.allowBroadcast ?? false}
+              onChange={(e) => updateConfig({ allowBroadcast: e.target.checked })}
+              className="accent-primary w-4 h-4 cursor-pointer"
+            />
+          </label>
+
+          <div className="pt-1 text-[10px] text-outline border-t border-outline-variant/20">
+            * Por seguridad pedagógica, las respuestas a grupos y difusiones están <strong>desactivadas por defecto</strong>.
+          </div>
+        </div>
+
+        {/* Gemini API Key Indicator */}
+        <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-xs space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-primary flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              IA Gemini Conectada
+            </span>
+            <button
+              type="button"
+              onClick={onOpenApiKeysModal}
+              className="text-[10px] text-primary underline font-semibold"
+            >
+              Cambiar
+            </button>
+          </div>
+          <p className="text-[10px] text-on-surface-variant">
+            El chatbot está preparado para responder en WhatsApp con <strong>lenguaje natural, directo, cálido y sumamente breve</strong> (máximo 2 a 3 líneas).
+          </p>
+        </div>
+      </aside>
+
+      {/* Main Panel */}
+      <main className="flex-1 flex flex-col overflow-hidden bg-surface-container-lowest/40 dark:bg-slate-950">
+        {/* Navigation Tabs */}
+        <div className="h-12 border-b border-outline-variant/30 dark:border-slate-800 bg-surface-container-low dark:bg-slate-900 px-6 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            {[
+              { id: 'send', label: 'Envío Individual / Masivo', icon: Send },
+              { id: 'groups', label: `Grupos Extraídos (${groups.length})`, icon: Users },
+              { id: 'bot_info', label: 'Habilidades del Chatbot (CNEB/PDF)', icon: Sparkles },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = subTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSubTab(tab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-primary text-on-primary shadow-sm'
+                      : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleFetchGroups}
+              disabled={loadingGroups || !statusData.connected}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 text-primary dark:text-sky-300 text-xs font-semibold hover:bg-primary/10 transition-colors disabled:opacity-40"
+            >
+              <Users className={`w-3.5 h-3.5 ${loadingGroups ? 'animate-spin' : ''}`} />
+              <span>{loadingGroups ? 'Extrayendo...' : 'Extraer Grupos'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab 1: SEND MESSAGE / MASSIVE CAMPAIGN */}
+        {subTab === 'send' && (
+          <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-6">
+            <div>
+              <h2 className="text-xl font-headline font-bold text-on-surface">Envío de Mensajes y Documentos por WhatsApp</h2>
+              <p className="text-xs text-on-surface-variant">Envía mensajes directos a números específicos, listas masivas o grupos seleccionados.</p>
+            </div>
+
+            {/* Selected Groups Chips */}
+            {selectedGroups.length > 0 && (
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-primary flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" />
+                    Grupos seleccionados para el envío ({selectedGroups.length}):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGroups([])}
+                    className="text-[10px] text-rose-500 hover:underline"
+                  >
+                    Quitar todos
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedGroups.map((jid) => {
+                    const gInfo = groups.find((g) => g.jid === jid);
+                    return (
+                      <span
+                        key={jid}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-lowest text-xs border border-primary/30 text-primary font-medium"
+                      >
+                        <span>{gInfo ? gInfo.name : jid}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroupSelection(jid)}
+                          className="hover:text-rose-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Form */}
+            <div className="space-y-4 p-5 rounded-2xl bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 dark:border-slate-800 shadow-sm">
+              <div>
+                <label className="text-xs font-bold text-on-surface block mb-1.5">
+                  Destinatarios (Números individuales o masivos, uno por línea con código de país):
+                </label>
+                <textarea
+                  rows={3}
+                  value={recipientInput}
+                  onChange={(e) => setRecipientInput(e.target.value)}
+                  placeholder="Ejemplo:&#10;51987654321&#10;51912345678&#10;+51 999 888 777"
+                  className="w-full p-3 text-xs rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant/30 dark:border-slate-800 text-on-surface font-mono outline-none focus:ring-1 focus:ring-primary"
+                />
+                <span className="text-[10px] text-outline block mt-1">
+                  Puedes pegar columnas de números directamente desde Excel o WhatsApp.
+                </span>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-on-surface block mb-1.5">
+                  Mensaje a Enviar:
+                </label>
+                <textarea
+                  rows={4}
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Escribe el mensaje que deseas enviar a los destinatarios..."
+                  className="w-full p-3 text-xs rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant/30 dark:border-slate-800 text-on-surface outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              {/* Attachment preview / upload */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-on-surface block">Adjuntar Documento o Archivo Multimedia</span>
+                {attachment ? (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-primary/30">
+                    <div className="flex items-center gap-2.5">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <div>
+                        <div className="font-semibold text-xs text-on-surface">{attachment.name}</div>
+                        <div className="text-[10px] text-outline">{attachment.size} • {attachment.type}</div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAttachment(null)}
+                      className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                      title="Quitar adjunto"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-outline-variant/40 hover:border-primary cursor-pointer text-xs font-medium text-primary bg-surface-container-lowest dark:bg-slate-950 transition-colors">
+                    <Paperclip className="w-4 h-4" />
+                    <span>Seleccionar Documento (PDF, Word, Imágenes, etc.)</span>
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={isSending || !statusData.connected}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md transition-all active:scale-[0.98] disabled:opacity-40"
+                >
+                  <Send className={`w-4 h-4 ${isSending ? 'animate-pulse' : ''}`} />
+                  <span>{isSending ? 'Enviando...' : 'Enviar por WhatsApp'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: EXTRACTED GROUPS */}
+        {subTab === 'groups' && (
+          <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-headline font-bold text-on-surface">Grupos de WhatsApp ({groups.length})</h2>
+                <p className="text-xs text-on-surface-variant">Selecciona los grupos a los que deseas enviar mensajes o comunicados oficiales.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleFetchGroups}
+                disabled={loadingGroups || !statusData.connected}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-surface-tint shadow-sm"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingGroups ? 'animate-spin' : ''}`} />
+                <span>Actualizar Grupos</span>
+              </button>
+            </div>
+
+            {groups.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl border border-dashed border-outline-variant/40 space-y-3">
+                <Users className="w-8 h-8 text-outline mx-auto" />
+                <p className="text-xs text-outline">
+                  {statusData.connected
+                    ? 'Aún no se han extraído los grupos. Haz clic en "Extraer Grupos" para listarlos.'
+                    : 'Conecta tu cuenta de WhatsApp para poder extraer tus grupos.'}
+                </p>
+                {statusData.connected && (
+                  <button
+                    type="button"
+                    onClick={handleFetchGroups}
+                    className="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-semibold"
+                  >
+                    Extraer Grupos Ahora
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {groups.map((g) => {
+                  const isSelected = selectedGroups.includes(g.jid);
+                  return (
+                    <div
+                      key={g.jid}
+                      onClick={() => toggleGroupSelection(g.jid)}
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? 'bg-primary/10 border-primary shadow-sm'
+                          : 'bg-surface-container-low dark:bg-slate-900 border-outline-variant/30 hover:border-outline-variant/60'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <span className="font-bold text-xs text-on-surface truncate block">{g.name}</span>
+                        <span className="text-[10px] text-outline flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {g.participants} participantes
+                        </span>
+                      </div>
+                      <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                        isSelected ? 'bg-primary border-primary text-on-primary' : 'border-outline-variant/40'
+                      }`}>
+                        {isSelected && <Check className="w-3.5 h-3.5" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 3: CHATBOT CAPABILITIES (CNEB + PDF) */}
+        {subTab === 'bot_info' && (
+          <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-6">
+            <div>
+              <h2 className="text-xl font-headline font-bold text-on-surface">Capacidades del Chatbot Inteligente en WhatsApp</h2>
+              <p className="text-xs text-on-surface-variant">Conexión directa entre WhatsApp y el motor pedagógico y documental de DocuCraft Pro.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-primary text-sm">
+                  <GraduationCap className="w-5 h-5 text-primary" />
+                  <span>Generador de Sesiones CNEB por Chat</span>
+                </div>
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  Cualquier docente puede escribirle al número de WhatsApp solicitudes como:
+                </p>
+                <div className="p-2.5 rounded-xl bg-slate-950 text-slate-100 font-mono text-[11px] leading-relaxed">
+                  "Elabora una sesión de aprendizaje acerca del tratamiento del agua para niños de 5to grado de primaria"
+                </div>
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  El chatbot procesará la competencia, capacidades y secuencia didáctica oficial y enviará de inmediato el <strong>documento PDF formateado como archivo adjunto</strong>.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-surface-container-low dark:bg-slate-900 border border-outline-variant/30 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-primary text-sm">
+                  <Bot className="w-5 h-5 text-emerald-500" />
+                  <span>Respuestas Ultracortas y Humanas</span>
+                </div>
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  El prompt de sistema de WhatsApp está especialmente afinado para:
+                </p>
+                <ul className="list-disc pl-4 space-y-1 text-xs text-on-surface-variant">
+                  <li>Limitar respuestas a un máximo de <strong>2 a 3 líneas directas</strong>.</li>
+                  <li>Evitar saludos o despedidas redundantes.</li>
+                  <li>Tono cercano y empático propio de mensajería instantánea.</li>
+                  <li>Aislamiento de grupos y difusiones por seguridad.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};

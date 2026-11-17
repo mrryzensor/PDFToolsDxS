@@ -6,3 +6,11 @@ dist-ssr
 .env.*
 .DS_Store
 *.log
+*.exe
+server-go/*.exe
+server-go/*.db
+server-go/*.db-shm
+server-go/*.db-wal
+server-go/whatsapp_session.db
+server-go/whatsapp_config.json
+

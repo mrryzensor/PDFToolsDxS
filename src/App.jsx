@@ -9,6 +9,7 @@ import { PdfToolsView } from './components/tools/PdfToolsView';
 import { CertificatesView } from './components/certificates/CertificatesView';
 import { LearningSessionsView } from './components/sessions/LearningSessionsView';
 import { RubricsView } from './components/rubrics/RubricsView';
+import { WhatsAppView } from './components/whatsapp/WhatsAppView';
 import { ApiKeysModal } from './components/common/ApiKeysModal';
 import { useToast } from './context/ToastContext';
 import { Plus, Layers } from 'lucide-react';
@@ -483,6 +484,11 @@ export const App = () => {
       {/* View 5: Rubrics & Interactive Student Exam Solver */}
       {currentView === 'rubrics' && (
         <RubricsView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
+      )}
+
+      {/* View 6: WhatsApp Suite (Go + whatsmeow + IA) */}
+      {currentView === 'whatsapp' && (
+        <WhatsAppView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
       )}
 
       {/* Modals */}

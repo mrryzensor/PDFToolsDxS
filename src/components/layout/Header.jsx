@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   FileText, Wrench, Moon, Sun, Download, Award, GraduationCap, 
-  FileCheck2, Key, Sparkles
+  FileCheck2, Key, Sparkles, MessageSquare 
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { AccentColorPicker } from '../common/AccentColorPicker';
@@ -95,6 +95,19 @@ export const Header = ({
           >
             <FileCheck2 className="w-3.5 h-3.5" />
             <span>Rúbricas & Exámenes</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCurrentView('whatsapp')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+              currentView === 'whatsapp'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-500/10'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>WhatsApp (Go)</span>
           </button>
         </div>
       </div>
