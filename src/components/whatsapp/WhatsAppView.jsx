@@ -72,12 +72,19 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Sync Gemini key with Go backend
+  // Sync all Gemini keys with Go backend for failover
   useEffect(() => {
     const keys = getStoredGeminiKeys();
-    if (keys && keys.length > 0 && statusData.config && !statusData.config.geminiKey) {
-      const activeKey = keys[0].key;
-      updateConfig({ geminiKey: activeKey });
+    if (keys && keys.length > 0) {
+      const allKeyStrings = keys.map((k) => k.key).filter(Boolean);
+      // If backend doesn't have the list of keys or needs updating
+      const currentKeys = statusData.config?.geminiKeys || [];
+      if (allKeyStrings.length !== currentKeys.length || JSON.stringify(allKeyStrings) !== JSON.stringify(currentKeys)) {
+        updateConfig({
+          geminiKey: allKeyStrings[0] || '',
+          geminiKeys: allKeyStrings,
+        });
+      }
     }
   }, [statusData.config]);
 

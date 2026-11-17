@@ -38,7 +38,11 @@ type GeminiResponse struct {
 	} `json:"error,omitempty"`
 }
 
-func CallGemini(apiKey string, models []string, systemPrompt, userPrompt string, asJSON bool) (string, string, error) {
+func CallGeminiWithKeys(apiKeys []string, models []string, systemPrompt, userPrompt string, asJSON bool) (string, string, error) {
+	if len(apiKeys) == 0 {
+		return "", "", fmt.Errorf("no hay claves de Gemini configuradas")
+	}
+
 	if len(models) == 0 {
 		models = []string{
 			"gemini-3.5-flash-lite",
@@ -72,34 +76,47 @@ func CallGemini(apiKey string, models []string, systemPrompt, userPrompt string,
 	client := &http.Client{Timeout: 60 * time.Second}
 
 	var lastErr error
-	for _, m := range models {
-		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", m, apiKey)
-		resp, err := client.Post(url, "application/json", strings.NewReader(string(reqBytes)))
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		defer resp.Body.Close()
-
-		var gemResp GeminiResponse
-		if err := json.NewDecoder(resp.Body).Decode(&gemResp); err != nil {
-			lastErr = err
+	// Double Failover: Iterates through each API Key, and for each key, iterates models
+	for _, apiKey := range apiKeys {
+		k := strings.TrimSpace(apiKey)
+		if k == "" {
 			continue
 		}
 
-		if resp.StatusCode != http.StatusOK {
-			msg := "error"
-			if gemResp.Error != nil {
-				msg = gemResp.Error.Message
+		for _, m := range models {
+			url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", m, k)
+			resp, err := client.Post(url, "application/json", strings.NewReader(string(reqBytes)))
+			if err != nil {
+				lastErr = err
+				continue
 			}
-			lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
-			continue
-		}
 
-		if len(gemResp.Candidates) > 0 && len(gemResp.Candidates[0].Content.Parts) > 0 {
-			return gemResp.Candidates[0].Content.Parts[0].Text, m, nil
+			var gemResp GeminiResponse
+			_ = json.NewDecoder(resp.Body).Decode(&gemResp)
+			resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				msg := "error desconocido"
+				if gemResp.Error != nil {
+					msg = gemResp.Error.Message
+				}
+				lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+				// If key is invalid (401, 403), break model loop and switch to NEXT API KEY immediately
+				if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+					break
+				}
+				continue
+			}
+
+			if len(gemResp.Candidates) > 0 && len(gemResp.Candidates[0].Content.Parts) > 0 {
+				return gemResp.Candidates[0].Content.Parts[0].Text, m, nil
+			}
 		}
 	}
 
-	return "", "", fmt.Errorf("todos los modelos fallaron: %v", lastErr)
+	return "", "", fmt.Errorf("fallaron todas las claves/modelos de Gemini: %w", lastErr)
+}
+
+func CallGemini(apiKey string, models []string, systemPrompt, userPrompt string, asJSON bool) (string, string, error) {
+	return CallGeminiWithKeys([]string{apiKey}, models, systemPrompt, userPrompt, asJSON)
 }

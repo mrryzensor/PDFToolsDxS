@@ -29,6 +29,7 @@ type Config struct {
 	AllowGroups    bool     `json:"allowGroups"`    // Default false
 	AllowBroadcast bool     `json:"allowBroadcast"` // Default false
 	GeminiKey      string   `json:"geminiKey"`
+	GeminiKeys     []string `json:"geminiKeys"`
 	Models         []string `json:"models"`
 	AutoReply      bool     `json:"autoReply"`      // Chatbot toggle
 }
@@ -211,8 +212,17 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 	allowBroadcast := s.config.AllowBroadcast
 	autoReply := s.config.AutoReply
 	apiKey := s.config.GeminiKey
+	apiKeys := s.config.GeminiKeys
 	models := s.config.Models
 	s.configLock.RUnlock()
+
+	var allKeys []string
+	if len(apiKeys) > 0 {
+		allKeys = append(allKeys, apiKeys...)
+	}
+	if apiKey != "" {
+		allKeys = append(allKeys, apiKey)
+	}
 
 	if !autoReply {
 		return
@@ -243,7 +253,7 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 	log.Printf("[WhatsApp In] De: %s | Mensaje: %s\n", msg.Info.Sender.User, text)
 
 	// If no Gemini Key is configured, notify politely
-	if apiKey == "" {
+	if len(allKeys) == 0 {
 		s.sendTextMessage(msg.Info.Chat, "Hola! El chatbot est� activo pero a�n no tiene configurada su Gemini API Key en el panel de DocuCraft Pro.")
 		return
 	}
@@ -278,7 +288,7 @@ Elabora una sesi�n pedag�gica en formato JSON estricto:
   "tiempoCierre": 15,
   "recursosMateriales": "Materiales did�cticos"
 }`
-		jsonText, _, err := CallGemini(apiKey, models, systemPrompt, text, true)
+		jsonText, _, err := CallGeminiWithKeys(allKeys, models, systemPrompt, text, true)
 		if err == nil {
 			cleanJSON := strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(jsonText, "```json", ""), "```", ""))
 			var sData SessionPedagogicaData
@@ -302,7 +312,7 @@ REGLAS VITALES DE RESPUESTA:
 4. Si te piden una sesi�n pedag�gica, diles que con gusto la preparas y p�deles el tema y grado escolar.
 5. Puedes ayudar con: Sesiones CNEB, Certificados con QR, R�bricas y gesti�n de PDFs.`
 
-	respText, _, err := CallGemini(apiKey, models, chatSystemPrompt, text, false)
+	respText, _, err := CallGeminiWithKeys(allKeys, models, chatSystemPrompt, text, false)
 	if err != nil {
 		s.sendTextMessage(msg.Info.Chat, "Hola! Tuve una breve pausa con la IA, por favor rep�teme tu consulta.")
 		return
@@ -416,6 +426,9 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 			s.config.AutoReply = newCfg.AutoReply
 			if newCfg.GeminiKey != "" {
 				s.config.GeminiKey = newCfg.GeminiKey
+			}
+			if len(newCfg.GeminiKeys) > 0 {
+				s.config.GeminiKeys = newCfg.GeminiKeys
 			}
 			s.configLock.Unlock()
 			s.SaveConfig()
