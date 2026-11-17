@@ -40,8 +40,11 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
   const [attachment, setAttachment] = useState(null); // { name, data, type }
   const [isSending, setIsSending] = useState(false);
 
-  // Tab: 'send' | 'groups' | 'bot_config'
-  const [subTab, setSubTab] = useState('send');
+  // Phone pairing code state
+  const [phoneForPairing, setPhoneForPairing] = useState('');
+  const [pairingCode, setPairingCode] = useState('');
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [showPairPhoneModal, setShowPairPhoneModal] = useState(false);
 
   // Fetch status from Go backend
   const fetchStatus = async () => {
@@ -220,11 +223,43 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
   // Logout WhatsApp
   const handleLogout = async () => {
     try {
+      setStatusData((prev) => ({
+        ...prev,
+        connected: false,
+        phone: '',
+        status: 'scan_qr',
+      }));
       await fetch(`${API_BASE}/api/whatsapp/logout`, { method: 'POST' });
       fetchStatus();
-      showToast('Sesión de WhatsApp cerrada', 'info');
+      showToast('Sesión de WhatsApp cerrada exitosamente', 'info');
     } catch (err) {
       showToast('Error cerrando sesión: ' + err.message, 'error');
+    }
+  };
+
+  // Request pairing code with phone number
+  const handleRequestPairCode = async () => {
+    const clean = phoneForPairing.replace(/[^0-9]/g, '');
+    if (!clean || clean.length < 9) {
+      showToast('Ingresa un número telefónico válido con código de país (ej. 51987654321)', 'warning');
+      return;
+    }
+    try {
+      setPairingLoading(true);
+      showToast('Solicitando código de vinculación...', 'info');
+      const res = await fetch(`${API_BASE}/api/whatsapp/pair-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al obtener código');
+      setPairingCode(data.code);
+      showToast('¡Código de vinculación generado!', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setPairingLoading(false);
     }
   };
 
@@ -311,26 +346,46 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
                 <span className="text-[9px] text-slate-500 mb-2">
                   Abre WhatsApp ➔ Dispositivos vinculados ➔ Vincular dispositivo
                 </span>
-                <button
-                  type="button"
-                  onClick={handleResetQR}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-300"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Regenerar nuevo QR
-                </button>
+                <div className="flex items-center gap-2 mt-2 w-full">
+                  <button
+                    type="button"
+                    onClick={handleResetQR}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-1 text-[11px] font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-300"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Regenerar QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPairPhoneModal(true)}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-1 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Vincular con Código
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="p-4 flex flex-col items-center justify-center gap-2 text-center text-xs text-outline">
                 <span>Iniciando sesión segura...</span>
-                <button
-                  type="button"
-                  onClick={handleResetQR}
-                  className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
-                >
-                  <QrCode className="w-3.5 h-3.5" />
-                  Generar Código QR
-                </button>
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={handleResetQR}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
+                  >
+                    <QrCode className="w-3.5 h-3.5" />
+                    Generar QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPairPhoneModal(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-emerald-600 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Por Código
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -684,6 +739,86 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
           </div>
         )}
       </main>
+
+      {/* Modal: Pairing Code with Phone Number */}
+      {showPairPhoneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-surface dark:bg-slate-900 border border-outline-variant/30 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-headline font-bold text-on-surface">
+                  Vincular WhatsApp con Código
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPairPhoneModal(false);
+                  setPairingCode('');
+                }}
+                className="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              Si tu cámara no escanea el QR o WhatsApp dice <em>"No se pudo vincular"</em>, usa este método oficial de WhatsApp con código de 8 caracteres:
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-on-surface">Número con código de país:</label>
+              <input
+                type="tel"
+                value={phoneForPairing}
+                onChange={(e) => setPhoneForPairing(e.target.value)}
+                placeholder="Ej: 51987654321"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-outline-variant/30 bg-surface-container-low text-xs text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40 font-mono"
+              />
+              <span className="text-[10px] text-outline">Incluye tu prefijo internacional sin signo + ni espacios.</span>
+            </div>
+
+            {pairingCode && (
+              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
+                <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">
+                  Ingresa este código en tu WhatsApp móvil:
+                </span>
+                <div className="font-mono text-2xl font-black tracking-widest text-emerald-600 dark:text-emerald-400 selection:bg-emerald-200">
+                  {pairingCode}
+                </div>
+                <p className="text-[10px] text-on-surface-variant">
+                  En tu móvil: <strong>Dispositivos vinculados ➔ Vincular dispositivo ➔ Vincular con el número de teléfono</strong>
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPairPhoneModal(false);
+                  setPairingCode('');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={handleRequestPairCode}
+                disabled={pairingLoading}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-primary hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {pairingLoading && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                <span>{pairingCode ? 'Generar Otro Código' : 'Obtener Código'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

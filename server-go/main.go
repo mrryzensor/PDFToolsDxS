@@ -15,6 +15,7 @@ import (
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/proto/waCompanionReg"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
@@ -79,9 +80,9 @@ func (s *WhatsAppServer) SaveConfig() {
 }
 
 func (s *WhatsAppServer) InitWhatsApp() error {
-	// Configure valid Chrome browser companion properties recognized by WhatsApp servers
-	store.SetOSInfo("Chrome (Windows)", [3]uint32{122, 0, 6261})
-	store.DeviceProps.PlatformType = waProto.DeviceProps_CHROME.Enum()
+	// Standard OS metadata aligned with WhatsApp Web
+	store.SetOSInfo("macOS", [3]uint32{14, 4, 1})
+	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_SAFARI.Enum()
 	store.DeviceProps.RequireFullSync = proto.Bool(false)
 
 	dbLog := waLog.Stdout("Database", "ERROR", true)
@@ -384,11 +385,13 @@ func handleStatus(w http.ResponseWriter, r *http.Request) {
 	if s.client != nil && s.client.Store.ID != nil {
 		phone = s.client.Store.ID.User
 	}
+	// Only count as connected if client is connected AND has a paired phone/ID
+	isReallyConnected := connected && phone != ""
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    st,
-		"connected": connected,
+		"connected": isReallyConnected,
 		"phone":     phone,
 		"qr":        qr,
 		"config":    cfg,
@@ -542,13 +545,33 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := serverInstance
+	// Force disconnect immediately and wipe session database so it instantly resets to QR
 	if s.client != nil {
-		s.client.Logout(context.Background())
-		s.statusLock.Lock()
-		s.status = "disconnected"
-		s.qrCode = ""
-		s.statusLock.Unlock()
+		go func() {
+			_ = s.client.Logout(context.Background())
+		}()
+		s.client.Disconnect()
 	}
+	if s.container != nil {
+		_ = s.container.Close()
+	}
+
+	_ = os.Remove("whatsapp_session.db")
+	_ = os.Remove("whatsapp_session.db-wal")
+	_ = os.Remove("whatsapp_session.db-shm")
+
+	s.qrLock.Lock()
+	s.qrCode = ""
+	s.qrLock.Unlock()
+
+	s.statusLock.Lock()
+	s.status = "scan_qr"
+	s.statusLock.Unlock()
+
+	// Reinitialize in background immediately
+	go func() {
+		_ = s.InitWhatsApp()
+	}()
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
@@ -570,6 +593,47 @@ func handleResetQR(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
+type PairPhoneRequest struct {
+	Phone string `json:"phone"`
+}
+
+func handlePairPhone(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	if s.client == nil {
+		http.Error(w, `{"error":"Cliente no inicializado"}`, http.StatusBadRequest)
+		return
+	}
+
+	var req PairPhoneRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"Payload inválido"}`, http.StatusBadRequest)
+		return
+	}
+
+	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(req.Phone, "+", ""), " ", ""), "-", "")
+	if cleanPhone == "" {
+		http.Error(w, `{"error":"Número telefónico requerido"}`, http.StatusBadRequest)
+		return
+	}
+
+	code, err := s.client.PairPhone(context.Background(), cleanPhone, true, whatsmeow.PairClientSafari, "Safari (macOS)")
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"code":    code,
+	})
+}
+
 func main() {
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
@@ -583,6 +647,7 @@ func main() {
 	http.HandleFunc("/api/whatsapp/send", handleSendMessage)
 	http.HandleFunc("/api/whatsapp/logout", handleLogout)
 	http.HandleFunc("/api/whatsapp/reset-qr", handleResetQR)
+	http.HandleFunc("/api/whatsapp/pair-phone", handlePairPhone)
 
 	port := 8089
 	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)
