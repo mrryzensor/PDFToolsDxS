@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   GraduationCap, Sparkles, BookOpen, Layers, Download, 
   Trash2, Edit3, Eye, FileText, CheckCircle2, RefreshCw, 
@@ -41,8 +41,38 @@ export const LearningSessionsView = ({ onOpenApiKeysModal }) => {
   });
 
   const refreshSessions = () => {
-    setSessions(getLearningSessions());
+    // Merge localStorage sessions with WhatsApp backend sessions
+    const local = getLearningSessions();
+    fetch('http://localhost:8089/api/whatsapp/sessions')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((waSessions) => {
+        if (Array.isArray(waSessions) && waSessions.length > 0) {
+          // Combine avoiding duplicates by id
+          const existingIds = new Set(local.map((s) => s.id));
+          let hasNew = false;
+          waSessions.forEach((ws) => {
+            if (!existingIds.has(ws.id)) {
+              saveLearningSession(ws);
+              hasNew = true;
+            }
+          });
+          if (hasNew) {
+            setSessions(getLearningSessions());
+            return;
+          }
+        }
+        setSessions(local);
+      })
+      .catch(() => {
+        setSessions(local);
+      });
   };
+
+  useEffect(() => {
+    refreshSessions();
+    const interval = setInterval(refreshSessions, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const selectedAreaObj = CNEB_AREAS.find((a) => a.name === form.area) || CNEB_AREAS[1];
 
@@ -422,9 +452,16 @@ Debes responder ÚNICAMENTE en formato JSON válido con la siguiente estructura 
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1 min-w-0">
-                    <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
-                      {ses.area} • {ses.grado}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
+                        {ses.area} • {ses.grado}
+                      </span>
+                      {ses.origin === 'WhatsApp' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          WhatsApp
+                        </span>
+                      )}
+                    </div>
                     <h4 className="font-bold text-sm text-on-surface line-clamp-1">{ses.titulo}</h4>
                   </div>
                   <button

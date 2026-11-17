@@ -35,14 +35,16 @@ type Config struct {
 }
 
 type WhatsAppServer struct {
-	client     *whatsmeow.Client
-	container  *sqlstore.Container
-	config     Config
-	configLock sync.RWMutex
-	qrCode     string
-	qrLock     sync.RWMutex
-	status     string
-	statusLock sync.RWMutex
+	client       *whatsmeow.Client
+	container    *sqlstore.Container
+	config       Config
+	configLock   sync.RWMutex
+	qrCode       string
+	qrLock       sync.RWMutex
+	status       string
+	statusLock   sync.RWMutex
+	sessions     []map[string]interface{}
+	sessionsLock sync.RWMutex
 }
 
 var serverInstance *WhatsAppServer
@@ -67,9 +69,15 @@ func NewWhatsAppServer() *WhatsAppServer {
 		_ = json.Unmarshal(data, &cfg)
 	}
 
+	var savedSessions []map[string]interface{}
+	if data, err := os.ReadFile("whatsapp_sessions.json"); err == nil {
+		_ = json.Unmarshal(data, &savedSessions)
+	}
+
 	return &WhatsAppServer{
-		config: cfg,
-		status: "disconnected",
+		config:   cfg,
+		status:   "disconnected",
+		sessions: savedSessions,
 	}
 }
 
@@ -78,6 +86,14 @@ func (s *WhatsAppServer) SaveConfig() {
 	defer s.configLock.RUnlock()
 	bytes, _ := json.MarshalIndent(s.config, "", "  ")
 	_ = os.WriteFile("whatsapp_config.json", bytes, 0644)
+}
+
+func (s *WhatsAppServer) SaveSessionRecord(record map[string]interface{}) {
+	s.sessionsLock.Lock()
+	defer s.sessionsLock.Unlock()
+	s.sessions = append([]map[string]interface{}{record}, s.sessions...)
+	bytes, _ := json.MarshalIndent(s.sessions, "", "  ")
+	_ = os.WriteFile("whatsapp_sessions.json", bytes, 0644)
 }
 
 func (s *WhatsAppServer) InitWhatsApp() error {
@@ -233,9 +249,13 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 		return // Ignore group messages per user setting
 	}
 
-	isBroadcast := strings.HasSuffix(msg.Info.Chat.String(), "@broadcast")
+	chatStr := msg.Info.Chat.String()
+	isBroadcast := strings.HasSuffix(chatStr, "@broadcast") || strings.HasSuffix(chatStr, "@newsletter")
 	if isBroadcast && !allowBroadcast {
-		return // Ignore broadcasts per user setting
+		return // Ignore broadcasts and channels per user setting
+	}
+	if strings.Contains(chatStr, "newsletter") {
+		return // Never reply to WhatsApp broadcast channels
 	}
 
 	text := ""
@@ -312,6 +332,37 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 			}
 			var sData SessionPedagogicaData
 			if jsonErr := json.Unmarshal([]byte(cleanJSON), &sData); jsonErr == nil && sData.Titulo != "" {
+				// Record session in bank with destination "WhatsApp"
+				nowStr := time.Now().Format("02/01/2006 15:04")
+				record := map[string]interface{}{
+					"id":                     fmt.Sprintf("ses_wa_%d", time.Now().UnixMilli()),
+					"titulo":                 sData.Titulo,
+					"numeroSesion":           sData.NumeroSesion,
+					"institucion":            sData.Institucion,
+					"docente":                sData.Docente,
+					"area":                   sData.Area,
+					"grado":                  sData.Grado,
+					"seccion":                sData.Seccion,
+					"duracion":               sData.Duracion,
+					"competencia":            sData.Competencia,
+					"capacidades":            sData.Capacidades,
+					"desempenos":             sData.Desempenos,
+					"evidencia":              sData.Evidencia,
+					"instrumentoEvaluacion":  sData.InstrumentoEvaluacion,
+					"secuenciaInicio":        sData.SecuenciaInicio,
+					"tiempoInicio":           sData.TiempoInicio,
+					"secuenciaDesarrollo":    sData.SecuenciaDesarrollo,
+					"tiempoDesarrollo":       sData.TiempoDesarrollo,
+					"secuenciaCierre":        sData.SecuenciaCierre,
+					"tiempoCierre":           sData.TiempoCierre,
+					"recursosMateriales":     sData.RecursosMateriales,
+					"fecha":                  nowStr,
+					"modelUsed":              usedModel,
+					"origin":                 "WhatsApp",
+					"recipient":              msg.Info.Sender.User,
+				}
+				s.SaveSessionRecord(record)
+
 				pdfBytes, pdfErr := GenerateSessionPDF(&sData)
 				if pdfErr == nil && len(pdfBytes) > 0 {
 					filename := fmt.Sprintf("Sesion_%s.pdf", strings.ReplaceAll(sData.Titulo, " ", "_"))
@@ -673,6 +724,24 @@ func handlePairPhone(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func handleGetSessions(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	s.sessionsLock.RLock()
+	sessionsList := s.sessions
+	s.sessionsLock.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	if sessionsList == nil {
+		sessionsList = []map[string]interface{}{}
+	}
+	json.NewEncoder(w).Encode(sessionsList)
+}
+
 func main() {
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
@@ -687,6 +756,7 @@ func main() {
 	http.HandleFunc("/api/whatsapp/logout", handleLogout)
 	http.HandleFunc("/api/whatsapp/reset-qr", handleResetQR)
 	http.HandleFunc("/api/whatsapp/pair-phone", handlePairPhone)
+	http.HandleFunc("/api/whatsapp/sessions", handleGetSessions)
 
 	port := 8089
 	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)
