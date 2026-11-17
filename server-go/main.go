@@ -113,6 +113,7 @@ func (s *WhatsAppServer) InitWhatsApp() error {
 
 		go func() {
 			for evt := range qrChan {
+				log.Printf("[WhatsApp QR Event] %s\n", evt.Event)
 				if evt.Event == "code" {
 					// Generate base64 png
 					png, err := qrcode.Encode(evt.Code, qrcode.Medium, 256)
@@ -120,6 +121,9 @@ func (s *WhatsAppServer) InitWhatsApp() error {
 						s.qrLock.Lock()
 						s.qrCode = "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 						s.qrLock.Unlock()
+						log.Println("[WhatsApp] Nuevo código QR generado exitosamente.")
+					} else {
+						log.Printf("[WhatsApp] Error codificando QR a PNG: %v\n", err)
 					}
 					s.statusLock.Lock()
 					s.status = "scan_qr"
@@ -128,6 +132,9 @@ func (s *WhatsAppServer) InitWhatsApp() error {
 					s.statusLock.Lock()
 					s.status = evt.Event
 					s.statusLock.Unlock()
+					if evt.Event == "timeout" {
+						log.Println("[WhatsApp QR] El código QR expiró.")
+					}
 				}
 			}
 		}()
@@ -143,6 +150,30 @@ func (s *WhatsAppServer) InitWhatsApp() error {
 	}
 
 	return nil
+}
+
+func (s *WhatsAppServer) ResetAndGetQR() error {
+	if s.client != nil {
+		s.client.Disconnect()
+	}
+	if s.container != nil {
+		_ = s.container.Close()
+	}
+
+	// Remove session db so a completely fresh QR session starts
+	_ = os.Remove("whatsapp_session.db")
+	_ = os.Remove("whatsapp_session.db-wal")
+	_ = os.Remove("whatsapp_session.db-shm")
+
+	s.qrLock.Lock()
+	s.qrCode = ""
+	s.qrLock.Unlock()
+
+	s.statusLock.Lock()
+	s.status = "scan_qr"
+	s.statusLock.Unlock()
+
+	return s.InitWhatsApp()
 }
 
 func (s *WhatsAppServer) eventHandler(evt interface{}) {
@@ -523,6 +554,22 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
+func handleResetQR(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	if err := s.ResetAndGetQR(); err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"%v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
 func main() {
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
@@ -535,6 +582,7 @@ func main() {
 	http.HandleFunc("/api/whatsapp/groups", handleGetGroups)
 	http.HandleFunc("/api/whatsapp/send", handleSendMessage)
 	http.HandleFunc("/api/whatsapp/logout", handleLogout)
+	http.HandleFunc("/api/whatsapp/reset-qr", handleResetQR)
 
 	port := 8089
 	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)

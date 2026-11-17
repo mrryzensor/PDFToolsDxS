@@ -206,6 +206,17 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
     }
   };
 
+  // Reset and request new QR
+  const handleResetQR = async () => {
+    try {
+      showToast('Generando nuevo código QR...', 'info');
+      await fetch(`${API_BASE}/api/whatsapp/reset-qr`, { method: 'POST' });
+      fetchStatus();
+    } catch (err) {
+      showToast('Error al regenerar QR: ' + err.message, 'error');
+    }
+  };
+
   // Logout WhatsApp
   const handleLogout = async () => {
     try {
@@ -293,17 +304,33 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
               </div>
             ) : statusData.qr ? (
               <div className="flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-outline-variant/30 text-center">
-                <img src={statusData.qr} alt="Código QR WhatsApp" className="w-44 h-44 rounded-lg" />
+                <img src={statusData.qr} alt="Código QR WhatsApp" className="w-48 h-48 rounded-lg shadow-sm" />
                 <span className="text-[10px] font-mono text-slate-800 font-bold mt-2">
                   ESCANEA CON TU WHATSAPP
                 </span>
-                <span className="text-[9px] text-slate-500">
+                <span className="text-[9px] text-slate-500 mb-2">
                   Abre WhatsApp ➔ Dispositivos vinculados ➔ Vincular dispositivo
                 </span>
+                <button
+                  type="button"
+                  onClick={handleResetQR}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-300"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Regenerar nuevo QR
+                </button>
               </div>
             ) : (
-              <div className="p-4 text-center text-xs text-outline">
-                Iniciando sesión segura...
+              <div className="p-4 flex flex-col items-center justify-center gap-2 text-center text-xs text-outline">
+                <span>Iniciando sesión segura...</span>
+                <button
+                  type="button"
+                  onClick={handleResetQR}
+                  className="mt-1 inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  Generar Código QR
+                </button>
               </div>
             )}
           </div>
