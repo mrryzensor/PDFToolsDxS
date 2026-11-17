@@ -43,15 +43,12 @@ func CallGeminiWithKeys(apiKeys []string, models []string, systemPrompt, userPro
 		return "", "", fmt.Errorf("no hay claves de Gemini configuradas")
 	}
 
-	if len(models) == 0 {
-		models = []string{
-			"gemini-3.5-flash-lite",
-			"gemini-3.5-flash",
-			"gemini-2.5-flash-lite",
-			"gemini-2.5-flash",
-			"gemini-2.0-flash",
-			"gemini-1.5-flash",
-		}
+	// Default active models in priority order
+	models = []string{
+		"gemini-3.5-flash-lite",
+		"gemini-3.5-flash",
+		"gemini-flash-lite-latest",
+		"gemini-flash-latest",
 	}
 
 	reqBody := GeminiRequest{

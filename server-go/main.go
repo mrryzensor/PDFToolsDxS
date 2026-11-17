@@ -260,61 +260,85 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 
 	// Check if user is asking for a learning session / sesion de aprendizaje
 	lower := strings.ToLower(text)
-	if strings.Contains(lower, "sesion") || strings.Contains(lower, "sesi�n") || strings.Contains(lower, "planifica") || strings.Contains(lower, "clase") {
-		s.sendTextMessage(msg.Info.Chat, "�Entendido! Dame un momento, estoy dise�ando tu sesi�n de aprendizaje CNEB y generando el PDF...")
+	pedagogicalTrigger := strings.Contains(lower, "sesion") || 
+		strings.Contains(lower, "sesión") || 
+		strings.Contains(lower, "planifica") || 
+		strings.Contains(lower, "clase") || 
+		strings.Contains(lower, "primaria") || 
+		strings.Contains(lower, "secundaria") || 
+		strings.Contains(lower, "grado") || 
+		strings.Contains(lower, "cneb") || 
+		strings.Contains(lower, "rúbrica") || 
+		strings.Contains(lower, "rubrica")
 
-		// Generate session JSON via Gemini
-		systemPrompt := `Eres un especialista pedag�gico del Ministerio de Educaci�n (MINEDU) Per� experto en el Curr�culo Nacional (CNEB).
-Elabora una sesi�n pedag�gica en formato JSON estricto:
+	if pedagogicalTrigger {
+		s.sendTextMessage(msg.Info.Chat, "¡Entendido! Estoy elaborando tu sesión de aprendizaje CNEB completa y generando el documento PDF. Dame unos segundos...")
+
+		systemPrompt := `Eres un especialista pedagógico del Ministerio de Educación del Perú (MINEDU) y experto en el Currículo Nacional (CNEB).
+El usuario te pide una sesión de aprendizaje o tema educativo.
+Genera SIEMPRE una sesión pedagógica completa directamente sin hacer preguntas ni pedir datos adicionales. Asigna tú mismo el área curricular (Personal Social, Ciencia y Tecnología, Comunicación, etc.), la competencia y la secuencia didáctica según tu mejor criterio profesional.
+Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 {
-  "titulo": "T�tulo de la sesi�n",
+  "titulo": "Título de la sesión",
   "numeroSesion": "01",
-  "institucion": "I.E. Emblem�tica",
+  "institucion": "I.E. República del Perú",
   "docente": "Docente Virtual DocuCraft",
-  "area": "Ciencia y Tecnolog�a / Comunicaci�n / Matem�tica",
-  "grado": "5� Grado de Primaria",
+  "area": "Personal Social",
+  "grado": "6° Grado de Primaria",
   "seccion": "A",
   "duracion": 90,
-  "competencia": "Competencia CNEB",
-  "capacidades": ["Capacidad 1", "Capacidad 2"],
-  "desempenos": "Desempe�os precisados del grado",
-  "evidencia": "Evidencia de aprendizaje",
-  "instrumentoEvaluacion": "R�brica anal�tica",
-  "secuenciaInicio": "Actividades de inicio...",
+  "competencia": "Construye interpretaciones históricas",
+  "capacidades": ["Interpreta críticamente fuentes diversas", "Comprende el tiempo histórico", "Elabora explicaciones sobre procesos históricos"],
+  "desempenos": "Explica hechos o procesos históricos clave, reconociendo causas y consecuencias y valorando la paz y la integración.",
+  "evidencia": "Línea de tiempo o cuadro comparativo sobre los hitos de integración y paz.",
+  "instrumentoEvaluacion": "Rúbrica analítica de evaluación",
+  "secuenciaInicio": "Problematización, motivación, saberes previos y propósito de la sesión...",
   "tiempoInicio": 15,
-  "secuenciaDesarrollo": "Actividades de desarrollo...",
+  "secuenciaDesarrollo": "Gestión y acompañamiento del aprendizaje, análisis de información, toma de decisiones...",
   "tiempoDesarrollo": 60,
-  "secuenciaCierre": "Metacognici�n y cierre...",
+  "secuenciaCierre": "Metacognición: ¿Qué aprendimos hoy? ¿Para qué nos sirve? Evaluación formativa...",
   "tiempoCierre": 15,
-  "recursosMateriales": "Materiales did�cticos"
+  "recursosMateriales": "Textos escolares MINEDU, papelógrafos, plumones, mapas históricos"
 }`
-		jsonText, _, err := CallGeminiWithKeys(allKeys, models, systemPrompt, text, true)
+
+		jsonText, usedModel, err := CallGeminiWithKeys(allKeys, models, systemPrompt, text, false)
 		if err == nil {
-			cleanJSON := strings.TrimSpace(strings.ReplaceAll(strings.ReplaceAll(jsonText, "```json", ""), "```", ""))
+			log.Printf("[WhatsApp Bot] Sesión generada exitosamente con modelo: %s\n", usedModel)
+			cleanJSON := strings.TrimSpace(jsonText)
+			if start := strings.Index(cleanJSON, "{"); start != -1 {
+				if end := strings.LastIndex(cleanJSON, "}"); end != -1 && end > start {
+					cleanJSON = cleanJSON[start : end+1]
+				}
+			}
 			var sData SessionPedagogicaData
-			if jsonErr := json.Unmarshal([]byte(cleanJSON), &sData); jsonErr == nil {
+			if jsonErr := json.Unmarshal([]byte(cleanJSON), &sData); jsonErr == nil && sData.Titulo != "" {
 				pdfBytes, pdfErr := GenerateSessionPDF(&sData)
 				if pdfErr == nil && len(pdfBytes) > 0 {
 					filename := fmt.Sprintf("Sesion_%s.pdf", strings.ReplaceAll(sData.Titulo, " ", "_"))
-					s.sendDocument(msg.Info.Chat, pdfBytes, filename, "application/pdf", fmt.Sprintf("Aqu� tienes tu sesi�n pedag�gica lista en PDF: *%s*", sData.Titulo))
+					s.sendDocument(msg.Info.Chat, pdfBytes, filename, "application/pdf", fmt.Sprintf("¡Listo! Aquí tienes tu sesión pedagógica oficial en PDF: *%s*", sData.Titulo))
 					return
+				} else {
+					log.Printf("[WhatsApp Bot] Error generando PDF: %v\n", pdfErr)
 				}
+			} else {
+				log.Printf("[WhatsApp Bot] Error parseando JSON: %v\n", jsonErr)
 			}
+		} else {
+			log.Printf("[WhatsApp Bot] Error llamando a Gemini para sesión: %v\n", err)
 		}
 	}
 
-	// Natural chat conversation: Short, warm, direct
-	chatSystemPrompt := `Eres el asistente virtual inteligente de DocuCraft Pro en WhatsApp.
-REGLAS VITALES DE RESPUESTA:
-1. Responde SIEMPRE de forma sumamente corta, concisa y personal (m�ximo 2 a 3 oraciones breves).
-2. Tono cercano, amable y profesional.
-3. No des introducciones largas ni rodeos.
-4. Si te piden una sesi�n pedag�gica, diles que con gusto la preparas y p�deles el tema y grado escolar.
-5. Puedes ayudar con: Sesiones CNEB, Certificados con QR, R�bricas y gesti�n de PDFs.`
+	// General short chat
+	chatSystemPrompt := `Eres el asistente virtual de DocuCraft Pro en WhatsApp.
+REGLAS:
+1. Responde de forma muy concisa, cercana y en máximo 2 a 3 oraciones.
+2. Si te piden una sesión pedagógica, di '¡Claro! Enseguida la preparo' y no pidas más preguntas.
+3. Ayudas con: Sesiones de aprendizaje CNEB, Certificados con QR y documentos PDF.`
 
 	respText, _, err := CallGeminiWithKeys(allKeys, models, chatSystemPrompt, text, false)
 	if err != nil {
-		s.sendTextMessage(msg.Info.Chat, "Hola! Tuve una breve pausa con la IA, por favor rep�teme tu consulta.")
+		log.Printf("[WhatsApp Bot] Error general Gemini: %v\n", err)
+		s.sendTextMessage(msg.Info.Chat, "Hola! Tuve una breve pausa con la IA, por favor repíteme tu consulta.")
 		return
 	}
 
