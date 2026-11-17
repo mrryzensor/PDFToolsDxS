@@ -15,6 +15,7 @@ import (
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow"
 	waProto "go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -78,6 +79,11 @@ func (s *WhatsAppServer) SaveConfig() {
 }
 
 func (s *WhatsAppServer) InitWhatsApp() error {
+	// Configure valid Chrome browser companion properties recognized by WhatsApp servers
+	store.SetOSInfo("Chrome (Windows)", [3]uint32{122, 0, 6261})
+	store.DeviceProps.PlatformType = waProto.DeviceProps_CHROME.Enum()
+	store.DeviceProps.RequireFullSync = proto.Bool(false)
+
 	dbLog := waLog.Stdout("Database", "ERROR", true)
 	ctx := context.Background()
 	container, err := sqlstore.New(ctx, "sqlite", "file:whatsapp_session.db?_pragma=foreign_keys(1)", dbLog)

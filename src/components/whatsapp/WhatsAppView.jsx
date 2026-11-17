@@ -3,7 +3,7 @@ import {
   MessageSquare, Send, Users, QrCode, RefreshCw, Power, 
   Settings2, Paperclip, CheckCircle2, AlertCircle, FileText, 
   Bot, ShieldAlert, Sparkles, Phone, Upload, Trash2, Check,
-  Radio, X
+  Radio, X, GraduationCap 
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { getStoredGeminiKeys } from '../../utils/storage';
