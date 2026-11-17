@@ -46,6 +46,9 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
   const [pairingLoading, setPairingLoading] = useState(false);
   const [showPairPhoneModal, setShowPairPhoneModal] = useState(false);
 
+  // Sub tab: 'send' | 'groups' | 'bot_config'
+  const [subTab, setSubTab] = useState('send');
+
   // Fetch status from Go backend
   const fetchStatus = async () => {
     try {
