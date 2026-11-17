@@ -87,7 +87,9 @@ func (s *WhatsAppServer) InitWhatsApp() error {
 
 	dbLog := waLog.Stdout("Database", "ERROR", true)
 	ctx := context.Background()
-	container, err := sqlstore.New(ctx, "sqlite", "file:whatsapp_session.db?_pragma=foreign_keys(1)", dbLog)
+	// WAL mode and busy_timeout=5000 prevent database locked (SQLITE_BUSY) errors on high socket concurrency
+	dbURI := "file:whatsapp_session.db?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
+	container, err := sqlstore.New(ctx, "sqlite", dbURI, dbLog)
 	if err != nil {
 		return fmt.Errorf("error inicializando store: %w", err)
 	}
