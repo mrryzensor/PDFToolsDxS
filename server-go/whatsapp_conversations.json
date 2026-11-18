@@ -1,0 +1,75 @@
+{
+  "268406230098154": {
+    "phone": "268406230098154",
+    "name": "Ing David Salcedo",
+    "type": "interesado",
+    "characteristics": "",
+    "orders": "",
+    "isPaused": false,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1794963069230581200",
+        "fromMe": false,
+        "sender": "Ing David Salcedo",
+        "text": "puedes elaborarme una sesión de aprendizaje acerca de la historia del Perú?",
+        "timestamp": 1794963069230
+      },
+      {
+        "id": "msg_1794963069806250400",
+        "fromMe": true,
+        "sender": "Ing David Salcedo",
+        "text": "¡Entendido! Estoy elaborando tu sesión de aprendizaje CNEB completa y generando el documento PDF. Dame unos segundos...",
+        "timestamp": 1794963069806
+      },
+      {
+        "id": "msg_1794963074256554600",
+        "fromMe": true,
+        "sender": "Ing David Salcedo",
+        "text": "¡Listo! Aquí tienes tu sesión pedagógica oficial en PDF: *Reconociendo los procesos históricos del Perú para fortalecer nuestra identidad* [Archivo PDF Adjunto]",
+        "timestamp": 1794963074256
+      },
+      {
+        "id": "msg_1794963140260176600",
+        "fromMe": false,
+        "sender": "Ing David Salcedo",
+        "text": "puedes programarme una cita sobre certificación para el día de mañana a las 9AM?",
+        "timestamp": 1794963140260
+      },
+      {
+        "id": "msg_1794963142428125800",
+        "fromMe": true,
+        "sender": "Ing David Salcedo",
+        "text": "¡Claro que sí! Tu cita para certificación con QR quedó agendada para mañana a las 9:00 a.m. ¿Te ayudo con algo más para ese día?",
+        "timestamp": 1794963142428
+      }
+    ],
+    "lastMessageAt": 1794963142428
+  },
+  "42546348703968": {
+    "phone": "42546348703968",
+    "name": "David Salcedo Informático",
+    "type": "interesado",
+    "characteristics": "",
+    "orders": "",
+    "isPaused": false,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1794962867668792700",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "hola, cómo te llamas",
+        "timestamp": 1794962867668
+      },
+      {
+        "id": "msg_1794962870766527200",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "¡Hola! Soy tu asesor virtual de DocuCraft Pro, listo para ayudarte con tus documentos pedagógicos y administrativos. ¿En qué te puedo colaborar hoy?",
+        "timestamp": 1794962870766
+      }
+    ],
+    "lastMessageAt": 1794962870766
+  }
+}

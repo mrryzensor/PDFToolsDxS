@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MessageSquare, User, Bot, Send, PauseCircle, PlayCircle, 
   ExternalLink, Edit3, Check, RefreshCw, Sparkles, AlertCircle,
-  Clock, CheckCircle2, ChevronRight, Phone, ShieldCheck, Tag
+  Clock, CheckCircle2, ChevronRight, Phone, ShieldCheck, Tag,
+  Calendar, CheckSquare
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { getRecordsCases, saveRecordCase } from '../../utils/storage';
@@ -24,6 +25,7 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
     type: 'interesado',
     characteristics: '',
     orders: '',
+    appointmentDate: '',
   });
 
   const messagesEndRef = useRef(null);
@@ -72,10 +74,11 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
         type: activeConv.type || 'interesado',
         characteristics: activeConv.characteristics || '',
         orders: activeConv.orders || '',
+        appointmentDate: activeConv.appointmentDate || '',
       });
       setEditingDetails(false);
     }
-  }, [activeConv?.phone]);
+  }, [activeConv?.phone, activeConv?.appointmentDate, activeConv?.orders, activeConv?.characteristics]);
 
   const handleTogglePause = async (phone) => {
     try {
@@ -106,6 +109,7 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
           type: detailForm.type,
           characteristics: detailForm.characteristics,
           orders: detailForm.orders,
+          appointmentDate: detailForm.appointmentDate,
         }),
       });
       const data = await res.json();
@@ -148,40 +152,66 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
     }
   };
 
-  const handleExportToRecords = () => {
+  const handleExportToRecords = async () => {
     if (!activeConv) return;
     const records = getRecordsCases();
     
     // Check if already registered
-    const existing = records.find(r => r.phone && r.phone.replace(/\D/g, '') === activeConv.phone);
+    const cleanPhone = activeConv.phone.replace(/\D/g, '');
+    const existing = records.find(r => r.phone && r.phone.replace(/\D/g, '') === cleanPhone);
     if (existing) {
-      showToast(`Este contacto ya está registrado como expediente (${existing.code})`, 'info');
+      // Update existing record with latest orders, characteristics and appointment
+      const updatedNotes = [...(existing.notes || [])];
+      if (activeConv.appointmentDate && !updatedNotes.some(n => n.text.includes(activeConv.appointmentDate))) {
+        updatedNotes.unshift({
+          id: `note_${Date.now()}`,
+          text: `Cita actualizada desde WhatsApp: ${activeConv.appointmentDate}`,
+          date: new Date().toISOString(),
+          author: 'IA WhatsApp',
+        });
+      }
+      
+      const updatedRecord = {
+        ...existing,
+        fullName: activeConv.name || existing.fullName,
+        type: activeConv.type || existing.type,
+        dueDate: activeConv.appointmentDate || existing.dueDate,
+        status: activeConv.appointmentDate ? 'En Proceso' : existing.status,
+        description: `Importado desde Chat WhatsApp.\n\nCaracterísticas:\n${activeConv.characteristics || 'Sin notas'}\n\nPedidos / Solicitud:\n${activeConv.orders || 'Sin pedidos registrados'}\n\nCita Agendada:\n${activeConv.appointmentDate || 'Sin cita'}`,
+        notes: updatedNotes,
+        updatedAt: new Date().toISOString(),
+      };
+      saveRecordCase(updatedRecord);
+      showToast(`Expediente ${existing.code} actualizado con la cita/pedido`, 'success');
       if (onNavigateToRecords) onNavigateToRecords();
       return;
     }
 
     const year = new Date().getFullYear();
     const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const code = `EXP-${year}-${randomCode}`;
     const newRecord = {
       id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      code: `EXP-${year}-${randomCode}`,
+      code: code,
       type: activeConv.type || 'interesado',
       fullName: activeConv.name || `Contacto WhatsApp +${activeConv.phone}`,
       docType: 'DNI',
       docNumber: '',
       email: '',
       phone: activeConv.phone,
-      category: activeConv.type === 'alumno' ? 'Estudiante Virtual' : 'Atención WhatsApp',
-      status: 'Nuevo',
-      progress: 10,
-      dueDate: '',
-      description: `Importado desde Chat WhatsApp.\n\nCaracterísticas:\n${activeConv.characteristics || 'Sin notas'}\n\nPedidos / Solicitud:\n${activeConv.orders || 'Sin pedidos registrados'}\n\nResumen Histórico IA:\n${activeConv.summary || 'Sin resumen previo'}`,
+      category: activeConv.type === 'alumno' ? 'Estudiante Virtual' : (activeConv.appointmentDate ? 'Cita Agendada' : 'Atención WhatsApp'),
+      status: activeConv.appointmentDate ? 'En Proceso' : 'Nuevo',
+      progress: activeConv.appointmentDate ? 25 : 10,
+      dueDate: activeConv.appointmentDate || '',
+      description: `Importado desde Chat WhatsApp.\n\nCaracterísticas:\n${activeConv.characteristics || 'Sin notas'}\n\nPedidos / Solicitud:\n${activeConv.orders || 'Sin pedidos registrados'}\n\nCita Agendada:\n${activeConv.appointmentDate || 'Sin cita programada'}\n\nResumen Histórico IA:\n${activeConv.summary || 'Sin resumen previo'}`,
       notes: [
         {
           id: `note_${Date.now()}`,
-          text: `Vinculado automáticamente desde la suite de WhatsApp DocuCraft.`,
+          text: activeConv.appointmentDate 
+            ? `Cita solicitada/agendada para: ${activeConv.appointmentDate}. Registrada automáticamente desde WhatsApp.`
+            : `Vinculado automáticamente desde la suite de WhatsApp DocuCraft.`,
           date: new Date().toISOString(),
-          author: 'Sistema WhatsApp',
+          author: 'Sistema WhatsApp IA',
         }
       ],
       createdAt: new Date().toISOString(),
@@ -189,6 +219,22 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
     };
 
     saveRecordCase(newRecord);
+
+    // Save synced flag back to backend
+    try {
+      await fetch(`${API_BASE}/api/whatsapp/conversations/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: activeConv.phone,
+          caseSynced: true,
+          caseCode: code,
+        }),
+      });
+    } catch (e) {
+      // ignore
+    }
+
     showToast(`¡Expediente ${newRecord.code} creado exitosamente en Gestión & Casos!`, 'success');
     if (onNavigateToRecords) {
       onNavigateToRecords();
@@ -512,6 +558,31 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
                   <p className="text-on-surface-variant leading-relaxed text-[11px] bg-surface-container-lowest/60 p-2 rounded-lg border border-outline-variant/20 whitespace-pre-wrap">
                     {activeConv.orders || 'Sin pedidos registrados.'}
                   </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-on-surface-variant mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  Cita / Fecha de Atención:
+                </label>
+                {editingDetails ? (
+                  <input
+                    type="text"
+                    value={detailForm.appointmentDate}
+                    onChange={(e) => setDetailForm({ ...detailForm, appointmentDate: e.target.value })}
+                    placeholder="Ej: Viernes 20, 4:00 PM o 2026-11-20 16:00"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-outline-variant/30 bg-surface-container-lowest text-xs text-on-surface focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                  />
+                ) : (
+                  <div className={`p-2 rounded-lg border text-[11px] font-medium flex items-center gap-2 ${
+                    activeConv.appointmentDate 
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300' 
+                      : 'bg-surface-container-lowest/60 border-outline-variant/20 text-on-surface-variant'
+                  }`}>
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span>{activeConv.appointmentDate || 'Sin cita agendada'}</span>
+                  </div>
                 )}
               </div>
             </div>

@@ -45,15 +45,18 @@ type ChatMessage struct {
 }
 
 type ContactConversation struct {
-	Phone          string        `json:"phone"`          // e.g. "51987654321"
-	Name           string        `json:"name"`           // Custom assigned name or contact name
-	Type           string        `json:"type"`           // "alumno", "cliente", "solicitud", "interesado"
-	Characteristics string       `json:"characteristics"` // Notes / custom features / preferences
-	Orders         string        `json:"orders"`         // Orders / Pedidos / Solicitudes
-	IsPaused       bool          `json:"isPaused"`       // Individual pause
-	Summary        string        `json:"summary"`        // Rolling summary of old context
-	Messages       []ChatMessage `json:"messages"`       // Last 15-20 messages
-	LastMessageAt  int64         `json:"lastMessageAt"`
+	Phone           string        `json:"phone"`           // e.g. "51987654321"
+	Name            string        `json:"name"`            // Custom assigned name or contact name
+	Type            string        `json:"type"`            // "alumno", "cliente", "solicitud", "interesado"
+	Characteristics string        `json:"characteristics"`  // Notes / custom features / preferences
+	Orders          string        `json:"orders"`          // Orders / Pedidos / Solicitudes
+	AppointmentDate string        `json:"appointmentDate"` // ISO string or human date e.g. "2026-11-20 16:00"
+	CaseSynced      bool          `json:"caseSynced"`      // True if automatically synced or registered in records
+	CaseCode        string        `json:"caseCode"`        // e.g. "EXP-2026-ABCD"
+	IsPaused        bool          `json:"isPaused"`        // Individual pause
+	Summary         string        `json:"summary"`         // Rolling summary of old context
+	Messages        []ChatMessage `json:"messages"`        // Last 15-20 messages
+	LastMessageAt   int64         `json:"lastMessageAt"`
 }
 
 type WhatsAppServer struct {
@@ -216,6 +219,115 @@ func (s *WhatsAppServer) AddMessageToConversation(phone string, senderName strin
 
 	s.conversationsLock.Unlock()
 	s.SaveConversations()
+
+	// If this is an incoming message from the user, run asynchronous CRM & Appointment entity extraction
+	if !fromMe && len(allKeys) > 0 {
+		go s.ExtractCRMEntitiesAsync(phone, text, allKeys, models)
+	}
+}
+
+// ExtractedCRMInfo represents automatic intent & entity parsing from chat
+type ExtractedCRMInfo struct {
+	Name            string `json:"name,omitempty"`
+	Type            string `json:"type,omitempty"`            // "alumno", "cliente", "solicitud", "interesado"
+	Orders          string `json:"orders,omitempty"`          // specific request / trámite / pedido
+	Characteristics string `json:"characteristics,omitempty"` // preferences / notes
+	AppointmentDate string `json:"appointmentDate,omitempty"` // Date or time of appointment, e.g. "2026-11-20 16:00" o "Viernes 20, 4:00 PM"
+	IsAppointment   bool   `json:"isAppointment,omitempty"`
+}
+
+func (s *WhatsAppServer) ExtractCRMEntitiesAsync(phone string, incomingText string, allKeys []string, models []string) {
+	// Look up conversation
+	s.conversationsLock.RLock()
+	conv, exists := s.conversations[phone]
+	if !exists {
+		s.conversationsLock.RUnlock()
+		return
+	}
+	currentName := conv.Name
+	currentType := conv.Type
+	currentOrders := conv.Orders
+	currentCharacteristics := conv.Characteristics
+	currentAppointment := conv.AppointmentDate
+	s.conversationsLock.RUnlock()
+
+	systemPrompt := `Eres un analizador de CRM para atención al cliente y gestión educativa.
+Analiza el mensaje del usuario y extrae información para el registro del expediente:
+1. "name": Nombre del usuario si se presenta (ej. "Soy Carlos Mendoza", "mi nombre es Juan"). Si no menciona nombre, devuelve cadena vacía "".
+2. "type": Si menciona ser alumno/estudiante ("alumno"), cliente comercial ("cliente"), persona con trámite o reclamo ("solicitud"), o prospecto general ("interesado"). Si no es claro, devuelve "".
+3. "orders": Petición, trámite, compra o pedido concreto (ej. "Cotización de certificados", "Asesoría para sesión de aprendizaje CNEB", "Revisión de expediente").
+4. "characteristics": Rasgos o preferencias mencionadas (ej. "Profesor de 6to de primaria", "Empresa distribuidora").
+5. "appointmentDate": Si solicita o acuerda una cita, reunión, llamada o fecha de entrega (ej. "mañana a las 4pm", "viernes 20 de noviembre 16:00").
+6. "isAppointment": true si está solicitando o acordando una cita/reunión/entrevista, false en caso contrario.
+
+Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos:
+{
+  "name": "",
+  "type": "",
+  "orders": "",
+  "characteristics": "",
+  "appointmentDate": "",
+  "isAppointment": false
+}`
+
+	userPrompt := fmt.Sprintf("Datos actuales:\nNombre: %s\nTipo: %s\nPedidos actuales: %s\nCaracterísticas: %s\nCita actual: %s\n\nNuevo mensaje recibido del cliente:\n\"%s\"",
+		currentName, currentType, currentOrders, currentCharacteristics, currentAppointment, incomingText)
+
+	jsonResult, _, err := CallGeminiWithKeys(allKeys, models, systemPrompt, userPrompt, false)
+	if err != nil {
+		return
+	}
+
+	cleanJSON := strings.TrimSpace(jsonResult)
+	if start := strings.Index(cleanJSON, "{"); start != -1 {
+		if end := strings.LastIndex(cleanJSON, "}"); end != -1 && end > start {
+			cleanJSON = cleanJSON[start : end+1]
+		}
+	}
+
+	var extracted ExtractedCRMInfo
+	if err := json.Unmarshal([]byte(cleanJSON), &extracted); err != nil {
+		return
+	}
+
+	updated := false
+	s.conversationsLock.Lock()
+	if c, ok := s.conversations[phone]; ok {
+		if extracted.Name != "" && (c.Name == "" || strings.HasPrefix(c.Name, "Contacto +")) {
+			c.Name = strings.TrimSpace(extracted.Name)
+			updated = true
+		}
+		if extracted.Type != "" && (c.Type == "" || c.Type == "interesado") {
+			c.Type = strings.TrimSpace(extracted.Type)
+			updated = true
+		}
+		if extracted.Orders != "" {
+			if c.Orders == "" {
+				c.Orders = strings.TrimSpace(extracted.Orders)
+			} else if !strings.Contains(c.Orders, extracted.Orders) {
+				c.Orders = c.Orders + " | " + strings.TrimSpace(extracted.Orders)
+			}
+			updated = true
+		}
+		if extracted.Characteristics != "" {
+			if c.Characteristics == "" {
+				c.Characteristics = strings.TrimSpace(extracted.Characteristics)
+			} else if !strings.Contains(c.Characteristics, extracted.Characteristics) {
+				c.Characteristics = c.Characteristics + " | " + strings.TrimSpace(extracted.Characteristics)
+			}
+			updated = true
+		}
+		if extracted.AppointmentDate != "" {
+			c.AppointmentDate = strings.TrimSpace(extracted.AppointmentDate)
+			updated = true
+		}
+	}
+	s.conversationsLock.Unlock()
+
+	if updated {
+		s.SaveConversations()
+		log.Printf("[CRM Auto-Extract] Contacto +%s actualizado automáticamente con pedidos/citas de IA\n", phone)
+	}
 }
 
 func (s *WhatsAppServer) SaveSessionRecord(record map[string]interface{}) {
@@ -970,6 +1082,9 @@ type UpdateConversationRequest struct {
 	Type            string `json:"type"`
 	Characteristics string `json:"characteristics"`
 	Orders          string `json:"orders"`
+	AppointmentDate string `json:"appointmentDate"`
+	CaseSynced      *bool  `json:"caseSynced,omitempty"`
+	CaseCode        string `json:"caseCode,omitempty"`
 	IsPaused        *bool  `json:"isPaused,omitempty"`
 }
 
@@ -1003,6 +1118,15 @@ func handleUpdateConversation(w http.ResponseWriter, r *http.Request) {
 	}
 	conv.Characteristics = req.Characteristics
 	conv.Orders = req.Orders
+	if req.AppointmentDate != "" {
+		conv.AppointmentDate = req.AppointmentDate
+	}
+	if req.CaseSynced != nil {
+		conv.CaseSynced = *req.CaseSynced
+	}
+	if req.CaseCode != "" {
+		conv.CaseCode = req.CaseCode
+	}
 	if req.IsPaused != nil {
 		conv.IsPaused = *req.IsPaused
 	}
