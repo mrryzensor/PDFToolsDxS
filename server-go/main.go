@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -35,17 +36,39 @@ type Config struct {
 	PausedChats    []string `json:"pausedChats"`    // List of phone numbers / JIDs paused individually
 }
 
+type ChatMessage struct {
+	ID        string `json:"id"`
+	FromMe    bool   `json:"fromMe"`
+	Sender    string `json:"sender"`
+	Text      string `json:"text"`
+	Timestamp int64  `json:"timestamp"`
+}
+
+type ContactConversation struct {
+	Phone          string        `json:"phone"`          // e.g. "51987654321"
+	Name           string        `json:"name"`           // Custom assigned name or contact name
+	Type           string        `json:"type"`           // "alumno", "cliente", "solicitud", "interesado"
+	Characteristics string       `json:"characteristics"` // Notes / custom features / preferences
+	Orders         string        `json:"orders"`         // Orders / Pedidos / Solicitudes
+	IsPaused       bool          `json:"isPaused"`       // Individual pause
+	Summary        string        `json:"summary"`        // Rolling summary of old context
+	Messages       []ChatMessage `json:"messages"`       // Last 15-20 messages
+	LastMessageAt  int64         `json:"lastMessageAt"`
+}
+
 type WhatsAppServer struct {
-	client       *whatsmeow.Client
-	container    *sqlstore.Container
-	config       Config
-	configLock   sync.RWMutex
-	qrCode       string
-	qrLock       sync.RWMutex
-	status       string
-	statusLock   sync.RWMutex
-	sessions     []map[string]interface{}
-	sessionsLock sync.RWMutex
+	client            *whatsmeow.Client
+	container         *sqlstore.Container
+	config            Config
+	configLock        sync.RWMutex
+	qrCode            string
+	qrLock            sync.RWMutex
+	status            string
+	statusLock        sync.RWMutex
+	sessions          []map[string]interface{}
+	sessionsLock      sync.RWMutex
+	conversations     map[string]*ContactConversation
+	conversationsLock sync.RWMutex
 }
 
 var serverInstance *WhatsAppServer
@@ -75,10 +98,16 @@ func NewWhatsAppServer() *WhatsAppServer {
 		_ = json.Unmarshal(data, &savedSessions)
 	}
 
+	savedConversations := make(map[string]*ContactConversation)
+	if data, err := os.ReadFile("whatsapp_conversations.json"); err == nil {
+		_ = json.Unmarshal(data, &savedConversations)
+	}
+
 	return &WhatsAppServer{
-		config:   cfg,
-		status:   "disconnected",
-		sessions: savedSessions,
+		config:        cfg,
+		status:        "disconnected",
+		sessions:      savedSessions,
+		conversations: savedConversations,
 	}
 }
 
@@ -87,6 +116,106 @@ func (s *WhatsAppServer) SaveConfig() {
 	defer s.configLock.RUnlock()
 	bytes, _ := json.MarshalIndent(s.config, "", "  ")
 	_ = os.WriteFile("whatsapp_config.json", bytes, 0644)
+}
+
+func (s *WhatsAppServer) SaveConversations() {
+	s.conversationsLock.RLock()
+	defer s.conversationsLock.RUnlock()
+	bytes, _ := json.MarshalIndent(s.conversations, "", "  ")
+	_ = os.WriteFile("whatsapp_conversations.json", bytes, 0644)
+}
+
+func (s *WhatsAppServer) GetOrCreateConversation(phone string, senderName string) *ContactConversation {
+	s.conversationsLock.Lock()
+	defer s.conversationsLock.Unlock()
+
+	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(phone, "+", ""), " ", ""), "-", "")
+	conv, exists := s.conversations[cleanPhone]
+	if !exists {
+		// Determine if phone is paused in config
+		isPaused := false
+		s.configLock.RLock()
+		for _, p := range s.config.PausedChats {
+			if strings.ReplaceAll(p, "+", "") == cleanPhone {
+				isPaused = true
+				break
+			}
+		}
+		s.configLock.RUnlock()
+
+		name := senderName
+		if name == "" {
+			name = "Contacto +" + cleanPhone
+		}
+
+		conv = &ContactConversation{
+			Phone:           cleanPhone,
+			Name:            name,
+			Type:            "interesado",
+			Characteristics: "",
+			Orders:          "",
+			IsPaused:        isPaused,
+			Summary:         "",
+			Messages:        []ChatMessage{},
+			LastMessageAt:   time.Now().UnixMilli(),
+		}
+		s.conversations[cleanPhone] = conv
+	}
+	return conv
+}
+
+func (s *WhatsAppServer) AddMessageToConversation(phone string, senderName string, fromMe bool, text string, allKeys []string, models []string) {
+	conv := s.GetOrCreateConversation(phone, senderName)
+
+	s.conversationsLock.Lock()
+	conv.LastMessageAt = time.Now().UnixMilli()
+	if !fromMe && senderName != "" && (conv.Name == "" || strings.HasPrefix(conv.Name, "Contacto +")) {
+		conv.Name = senderName
+	}
+
+	msg := ChatMessage{
+		ID:        fmt.Sprintf("msg_%d", time.Now().UnixNano()),
+		FromMe:    fromMe,
+		Sender:    conv.Name,
+		Text:      text,
+		Timestamp: time.Now().UnixMilli(),
+	}
+	conv.Messages = append(conv.Messages, msg)
+
+	// Rolling context management: When message count exceeds 20, summarize older messages with Gemini
+	if len(conv.Messages) > 20 {
+		oldBatch := conv.Messages[:10]
+		conv.Messages = conv.Messages[10:] // Keep the last 10+ messages
+
+		// Asynchronously summarize old batch in background
+		go func(oldMsgs []ChatMessage, existingSummary string, convPhone string) {
+			var sb strings.Builder
+			if existingSummary != "" {
+				sb.WriteString("Resumen previo del caso: " + existingSummary + "\n\n")
+			}
+			sb.WriteString("Mensajes anteriores de la conversación:\n")
+			for _, m := range oldMsgs {
+				who := "Usuario"
+				if m.FromMe {
+					who = "Asesor/Bot"
+				}
+				sb.WriteString(fmt.Sprintf("- %s: %s\n", who, m.Text))
+			}
+			prompt := "Resume de forma muy concisa en 2 o 3 líneas los puntos clave tratados, pedidos, acuerdos y datos del cliente para mantener el contexto histórico."
+			summaryResult, _, err := CallGeminiWithKeys(allKeys, models, prompt, sb.String(), false)
+			if err == nil && summaryResult != "" {
+				s.conversationsLock.Lock()
+				if c, ok := s.conversations[convPhone]; ok {
+					c.Summary = strings.TrimSpace(summaryResult)
+				}
+				s.conversationsLock.Unlock()
+				s.SaveConversations()
+			}
+		}(oldBatch, conv.Summary, conv.Phone)
+	}
+
+	s.conversationsLock.Unlock()
+	s.SaveConversations()
 }
 
 func (s *WhatsAppServer) SaveSessionRecord(record map[string]interface{}) {
@@ -286,7 +415,23 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 		return
 	}
 
-	log.Printf("[WhatsApp In] De: %s | Mensaje: %s\n", msg.Info.Sender.User, text)
+	senderUser = msg.Info.Sender.User
+	senderPushName := msg.Info.PushName
+	if senderPushName == "" {
+		senderPushName = msg.Info.Sender.User
+	}
+
+	log.Printf("[WhatsApp In] De: %s (%s) | Mensaje: %s\n", senderUser, senderPushName, text)
+
+	// Save incoming message in contact conversation
+	s.AddMessageToConversation(senderUser, senderPushName, false, text, allKeys, models)
+
+	// Retrieve conversation to check individual pause
+	conv := s.GetOrCreateConversation(senderUser, senderPushName)
+	if conv.IsPaused {
+		log.Printf("[WhatsApp Bot] Chat pausado individualmente para %s en conversaciones. Ignorando respuesta automática.\n", senderUser)
+		return
+	}
 
 	// If no Gemini Key is configured, notify politely
 	if len(allKeys) == 0 {
@@ -308,7 +453,9 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 		strings.Contains(lower, "rubrica")
 
 	if pedagogicalTrigger {
-		s.sendTextMessage(msg.Info.Chat, "¡Entendido! Estoy elaborando tu sesión de aprendizaje CNEB completa y generando el documento PDF. Dame unos segundos...")
+		ackMsg := "¡Entendido! Estoy elaborando tu sesión de aprendizaje CNEB completa y generando el documento PDF. Dame unos segundos..."
+		s.sendTextMessage(msg.Info.Chat, ackMsg)
+		s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, ackMsg, allKeys, models)
 
 		systemPrompt := `Eres un especialista pedagógico del Ministerio de Educación del Perú (MINEDU) y experto en el Currículo Nacional (CNEB).
 El usuario te pide una sesión de aprendizaje o tema educativo.
@@ -382,7 +529,9 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 				pdfBytes, pdfErr := GenerateSessionPDF(&sData)
 				if pdfErr == nil && len(pdfBytes) > 0 {
 					filename := fmt.Sprintf("Sesion_%s.pdf", strings.ReplaceAll(sData.Titulo, " ", "_"))
-					s.sendDocument(msg.Info.Chat, pdfBytes, filename, "application/pdf", fmt.Sprintf("¡Listo! Aquí tienes tu sesión pedagógica oficial en PDF: *%s*", sData.Titulo))
+					botCaption := fmt.Sprintf("¡Listo! Aquí tienes tu sesión pedagógica oficial en PDF: *%s*", sData.Titulo)
+					s.sendDocument(msg.Info.Chat, pdfBytes, filename, "application/pdf", botCaption)
+					s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, botCaption+" [Archivo PDF Adjunto]", allKeys, models)
 					return
 				} else {
 					log.Printf("[WhatsApp Bot] Error generando PDF: %v\n", pdfErr)
@@ -395,14 +544,40 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 		}
 	}
 
-	// General short chat
-	chatSystemPrompt := `Eres el asistente virtual de DocuCraft Pro en WhatsApp.
+	// General short chat with conversation history context
+	chatSystemPrompt := `Eres el asesor virtual inteligente de DocuCraft Pro en WhatsApp.
 REGLAS:
-1. Responde de forma muy concisa, cercana y en máximo 2 a 3 oraciones.
-2. Si te piden una sesión pedagógica, di '¡Claro! Enseguida la preparo' y no pidas más preguntas.
-3. Ayudas con: Sesiones de aprendizaje CNEB, Certificados con QR y documentos PDF.`
+1. Responde de forma muy concisa, cordial y en máximo 2 a 3 oraciones.
+2. Si te piden una sesión pedagógica, di '¡Claro! Enseguida la preparo' y no te quedes en bucles ni pidas más datos; créala.
+3. Ayudas con: Sesiones de aprendizaje CNEB, Certificados con QR, registro de alumnos/clientes y expedientes.
+4. Conoce al cliente por su nombre o pedidos previos si ya te los ha dado en la conversación.`
 
-	respText, _, err := CallGeminiWithKeys(allKeys, models, chatSystemPrompt, text, false)
+	// Build chat history for CallGeminiChatWithKeys
+	var chatHistory []GeminiContent
+	s.conversationsLock.RLock()
+	if conv.Summary != "" {
+		chatHistory = append(chatHistory, GeminiContent{
+			Role:  "user",
+			Parts: []GeminiPart{{Text: "[RESUMEN PREVIO DE LA CONVERSACIÓN]: " + conv.Summary}},
+		}, GeminiContent{
+			Role:  "model",
+			Parts: []GeminiPart{{Text: "Entendido, tengo presente todo el contexto anterior."}},
+		})
+	}
+
+	for _, m := range conv.Messages {
+		role := "user"
+		if m.FromMe {
+			role = "model"
+		}
+		chatHistory = append(chatHistory, GeminiContent{
+			Role:  role,
+			Parts: []GeminiPart{{Text: m.Text}},
+		})
+	}
+	s.conversationsLock.RUnlock()
+
+	respText, _, err := CallGeminiChatWithKeys(allKeys, models, chatSystemPrompt, chatHistory)
 	if err != nil {
 		log.Printf("[WhatsApp Bot] Error general Gemini: %v\n", err)
 		s.sendTextMessage(msg.Info.Chat, "Hola! Tuve una breve pausa con la IA, por favor repíteme tu consulta.")
@@ -410,6 +585,7 @@ REGLAS:
 	}
 
 	s.sendTextMessage(msg.Info.Chat, respText)
+	s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, respText, allKeys, models)
 }
 
 func (s *WhatsAppServer) sendTextMessage(to types.JID, text string) {
@@ -761,6 +937,137 @@ func handleGetSessions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(sessionsList)
 }
 
+func handleGetConversations(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	s := serverInstance
+	s.conversationsLock.RLock()
+	defer s.conversationsLock.RUnlock()
+
+	var convList []*ContactConversation
+	for _, conv := range s.conversations {
+		convList = append(convList, conv)
+	}
+
+	// Sort newest first
+	sort.Slice(convList, func(i, j int) bool {
+		return convList[i].LastMessageAt > convList[j].LastMessageAt
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	if convList == nil {
+		convList = []*ContactConversation{}
+	}
+	json.NewEncoder(w).Encode(convList)
+}
+
+type UpdateConversationRequest struct {
+	Phone           string `json:"phone"`
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	Characteristics string `json:"characteristics"`
+	Orders          string `json:"orders"`
+	IsPaused        *bool  `json:"isPaused,omitempty"`
+}
+
+func handleUpdateConversation(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	var req UpdateConversationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"payload invalido"}`, http.StatusBadRequest)
+		return
+	}
+
+	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(req.Phone, "+", ""), " ", ""), "-", "")
+	if cleanPhone == "" {
+		http.Error(w, `{"error":"teléfono requerido"}`, http.StatusBadRequest)
+		return
+	}
+
+	s := serverInstance
+	conv := s.GetOrCreateConversation(cleanPhone, req.Name)
+
+	s.conversationsLock.Lock()
+	if req.Name != "" {
+		conv.Name = req.Name
+	}
+	if req.Type != "" {
+		conv.Type = req.Type
+	}
+	conv.Characteristics = req.Characteristics
+	conv.Orders = req.Orders
+	if req.IsPaused != nil {
+		conv.IsPaused = *req.IsPaused
+	}
+	s.conversationsLock.Unlock()
+	s.SaveConversations()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "conversation": conv})
+}
+
+type TogglePauseConversationRequest struct {
+	Phone string `json:"phone"`
+}
+
+func handleTogglePauseConversation(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+
+	var req TogglePauseConversationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"payload invalido"}`, http.StatusBadRequest)
+		return
+	}
+
+	cleanPhone := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(req.Phone, "+", ""), " ", ""), "-", "")
+	if cleanPhone == "" {
+		http.Error(w, `{"error":"teléfono requerido"}`, http.StatusBadRequest)
+		return
+	}
+
+	s := serverInstance
+	conv := s.GetOrCreateConversation(cleanPhone, "")
+
+	s.conversationsLock.Lock()
+	conv.IsPaused = !conv.IsPaused
+	newState := conv.IsPaused
+	s.conversationsLock.Unlock()
+	s.SaveConversations()
+
+	// Also sync into pausedChats in config
+	s.configLock.Lock()
+	var updatedPaused []string
+	found := false
+	for _, p := range s.config.PausedChats {
+		if strings.ReplaceAll(strings.ReplaceAll(p, "+", ""), " ", "") == cleanPhone {
+			found = true
+			if !newState {
+				continue // remove if unpaused
+			}
+		}
+		updatedPaused = append(updatedPaused, p)
+	}
+	if newState && !found {
+		updatedPaused = append(updatedPaused, cleanPhone)
+	}
+	s.config.PausedChats = updatedPaused
+	s.configLock.Unlock()
+	s.SaveConfig()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "phone": cleanPhone, "isPaused": newState})
+}
+
 func main() {
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
@@ -776,6 +1083,9 @@ func main() {
 	http.HandleFunc("/api/whatsapp/reset-qr", handleResetQR)
 	http.HandleFunc("/api/whatsapp/pair-phone", handlePairPhone)
 	http.HandleFunc("/api/whatsapp/sessions", handleGetSessions)
+	http.HandleFunc("/api/whatsapp/conversations", handleGetConversations)
+	http.HandleFunc("/api/whatsapp/conversations/update", handleUpdateConversation)
+	http.HandleFunc("/api/whatsapp/conversations/toggle-pause", handleTogglePauseConversation)
 
 	port := 8089
 	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)

@@ -494,7 +494,10 @@ export const App = () => {
 
       {/* View 7: WhatsApp Suite (Go + whatsmeow + IA) */}
       {currentView === 'whatsapp' && (
-        <WhatsAppView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
+        <WhatsAppView 
+          onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} 
+          onNavigateToRecords={() => setCurrentView('records')}
+        />
       )}
 
       {/* Modals */}
