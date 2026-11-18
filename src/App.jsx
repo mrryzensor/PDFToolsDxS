@@ -10,6 +10,7 @@ import { CertificatesView } from './components/certificates/CertificatesView';
 import { LearningSessionsView } from './components/sessions/LearningSessionsView';
 import { RubricsView } from './components/rubrics/RubricsView';
 import { WhatsAppView } from './components/whatsapp/WhatsAppView';
+import { RecordsManagerView } from './components/records/RecordsManagerView';
 import { ApiKeysModal } from './components/common/ApiKeysModal';
 import { useToast } from './context/ToastContext';
 import { Plus, Layers } from 'lucide-react';
@@ -486,7 +487,12 @@ export const App = () => {
         <RubricsView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
       )}
 
-      {/* View 6: WhatsApp Suite (Go + whatsmeow + IA) */}
+      {/* View 6: Records & Case Tracking (Alumnos, Clientes, Solicitudes) */}
+      {currentView === 'records' && (
+        <RecordsManagerView />
+      )}
+
+      {/* View 7: WhatsApp Suite (Go + whatsmeow + IA) */}
       {currentView === 'whatsapp' && (
         <WhatsAppView onOpenApiKeysModal={() => setIsApiKeysModalOpen(true)} />
       )}

@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   LEARNING_SESSIONS: 'docucraft_learning_sessions_v1',
   RUBRICS: 'docucraft_rubrics_v1',
   EXAM_SUBMISSIONS: 'docucraft_exam_submissions_v1',
+  RECORDS_CASES: 'docucraft_records_cases_v1',
   GEMINI_KEYS: 'docucraft_gemini_keys_v1',
   GEMINI_ACTIVE_MODEL: 'docucraft_gemini_active_model_v1',
 };
@@ -180,6 +181,49 @@ export const saveRubric = (rubric) => {
 export const deleteRubric = (id) => {
   const rubrics = getRubrics().filter((r) => r.id !== id);
   safeSet(STORAGE_KEYS.RUBRICS, rubrics);
+  return true;
+};
+
+// ----------------- RECORDS & CASE TRACKING (ALUMNOS, CLIENTES, SOLICITUDES) -----------------
+
+export const getRecordsCases = () => safeGet(STORAGE_KEYS.RECORDS_CASES, []);
+
+export const saveRecordCase = (record) => {
+  const list = getRecordsCases();
+  const existingIdx = list.findIndex((item) => item.id === record.id);
+  if (existingIdx >= 0) {
+    list[existingIdx] = {
+      ...list[existingIdx],
+      ...record,
+      updatedAt: new Date().toISOString(),
+    };
+    safeSet(STORAGE_KEYS.RECORDS_CASES, list);
+    return list[existingIdx];
+  } else {
+    const newRecord = {
+      ...record,
+      id: record.id || `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      notes: record.notes || [],
+      history: record.history || [
+        {
+          id: `h_${Date.now()}`,
+          action: 'Registro creado',
+          date: new Date().toISOString(),
+          status: record.status || 'Nuevo',
+        },
+      ],
+    };
+    list.unshift(newRecord);
+    safeSet(STORAGE_KEYS.RECORDS_CASES, list);
+    return newRecord;
+  }
+};
+
+export const deleteRecordCase = (id) => {
+  const list = getRecordsCases().filter((r) => r.id !== id);
+  safeSet(STORAGE_KEYS.RECORDS_CASES, list);
   return true;
 };
 

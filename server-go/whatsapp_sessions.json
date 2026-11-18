@@ -1,0 +1,33 @@
+[
+  {
+    "area": "Personal Social",
+    "capacidades": [
+      "Interpreta críticamente fuentes diversas",
+      "Comprende el tiempo histórico",
+      "Elabora explicaciones sobre procesos históricos"
+    ],
+    "competencia": "Construye interpretaciones históricas",
+    "desempenos": "Identifica y explica acontecimientos históricos y míticos importantes, diferenciando la realidad de la leyenda y reflexionando sobre las estrategias en los conflictos de la antigüedad.",
+    "docente": "Docente Virtual DocuCraft",
+    "duracion": 90,
+    "evidencia": "Organizador gráfico (mapa conceptual o causa-efecto) sobre el episodio del Caballo de Troya.",
+    "fecha": "16/11/2026 20:50",
+    "grado": "5° Grado de Primaria",
+    "id": "ses_wa_1794880227970",
+    "institucion": "I.E. República del Perú",
+    "instrumentoEvaluacion": "Rúbrica analítica de evaluación",
+    "modelUsed": "gemini-3.5-flash-lite",
+    "numeroSesion": "01",
+    "origin": "WhatsApp",
+    "recipient": "42546348703968",
+    "recursosMateriales": "Fichas de lectura informativa, papelógrafos, plumones, cinta masking tape, proyector o láminas ilustradas.",
+    "seccion": "B",
+    "secuenciaCierre": "Metacognición y evaluación: Se propicia la reflexión de los estudiantes realizando las siguientes preguntas: ¿Qué aprendimos hoy sobre el Caballo de Troya? ¿Cómo lo aprendimos? ¿Qué dificultades tuvimos y cómo las superamos? ¿Para qué nos sirve conocer este tipo de relatos históricos? Se evalúa el desempeño de los estudiantes mediante una rúbrica analítica aplicada a sus organizadores gráficos. Se deja como extensión investigar brevemente sobre la obra 'La Ilíada' o 'La Odisea' de Homero.",
+    "secuenciaDesarrollo": "Gestión y acompañamiento del aprendizaje: Se entrega a los estudiantes una lectura corta adaptada del texto escolar del MINEDU sobre la Guerra de Troya y el famoso episodio del caballo. Se organiza a los equipos para que lean la información de forma colaborativa. A través de la técnica del subrayado, identifican a los personajes principales (Odiseo/Ulises, los aqueos y los troyanos) y los hechos clave. El docente guía el análisis mediante preguntas orientadoras: ¿Por qué los griegos no podían vencer a Troya con armas? ¿Qué estrategia ideó Odiseo? ¿Cuál fue el error de los troyanos? Los estudiantes socializan sus respuestas y, con la orientación del docente, distinguen entre los elementos mitológicos y los posibles hechos históricos reales. Finalmente, elaboran un organizador gráfico (causa, hecho principal y consecuencia) sobre el episodio.",
+    "secuenciaInicio": "Se inicia la sesión saludando a los estudiantes y mostrando una imagen misteriosa del Caballo de Troya. Se plantea la problematización mediante las siguientes preguntas: ¿Qué observan? ¿Saben qué historia hay detrás de este enorme caballo de madera? ¿Fue un hecho real o un mito? Se recogen los saberes previos mediante lluvia de ideas. Luego, se comunica el propósito de la sesión: 'Hoy conoceremos el mito e historia del Caballo de Troya, analizando sus causas y consecuencias dentro del contexto de la antigua Grecia'. Se establecen las normas de convivencia para el trabajo en equipo.",
+    "tiempoCierre": 15,
+    "tiempoDesarrollo": 60,
+    "tiempoInicio": 15,
+    "titulo": "Descubriendo la historia y el mito: El Caballo de Troya"
+  }
+]

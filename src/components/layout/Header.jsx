@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   FileText, Wrench, Moon, Sun, Download, Award, GraduationCap, 
-  FileCheck2, Key, Sparkles, MessageSquare 
+  FileCheck2, Key, Sparkles, MessageSquare, Users 
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { AccentColorPicker } from '../common/AccentColorPicker';
@@ -95,6 +95,19 @@ export const Header = ({
           >
             <FileCheck2 className="w-3.5 h-3.5" />
             <span>Rúbricas & Exámenes</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCurrentView('records')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+              currentView === 'records'
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'text-on-surface-variant dark:text-slate-400 hover:text-on-surface dark:hover:text-slate-200'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Gestión & Casos</span>
           </button>
 
           <button
