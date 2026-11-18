@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users, UserCheck, Clock, CheckCircle2, AlertCircle, Search, 
   Filter, Plus, Download, FileText, Calendar, Edit3, Trash2, 
@@ -32,6 +32,118 @@ const STATUS_OPTIONS = [
 export const RecordsManagerView = () => {
   const { showToast } = useToast();
   const [records, setRecords] = useState(() => getRecordsCases());
+
+  // Auto-sync with WhatsApp conversations on mount and periodic interval
+  useEffect(() => {
+    const syncFromWhatsApp = async () => {
+      try {
+        const res = await fetch('http://localhost:8089/api/whatsapp/conversations');
+        if (!res.ok) return;
+        const convList = await res.json();
+        if (!Array.isArray(convList) || convList.length === 0) return;
+
+        let hasNew = false;
+        const currentRecords = getRecordsCases();
+
+        for (const conv of convList) {
+          // If conversation has orders, appointment, or messages
+          const cleanPhone = (conv.phone || '').replace(/\D/g, '');
+          if (!cleanPhone) continue;
+
+          // Only auto-import if contact has expressed a request/order, appointment or has multiple messages
+          const hasContent = conv.orders || conv.appointmentDate || (conv.messages && conv.messages.length >= 2);
+          if (!hasContent) continue;
+
+          const existing = currentRecords.find((r) => r.phone && r.phone.replace(/\D/g, '') === cleanPhone);
+
+          if (!existing) {
+            const year = new Date().getFullYear();
+            const randomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            const code = `EXP-${year}-${randomCode}`;
+
+            const newRec = {
+              id: `rec_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              code: code,
+              type: conv.type || (conv.orders?.toLowerCase().includes('curso') || conv.orders?.toLowerCase().includes('alumno') ? 'alumno' : 'interesado'),
+              fullName: conv.name || `Contacto WhatsApp +${conv.phone}`,
+              docType: 'DNI',
+              docNumber: '',
+              email: '',
+              phone: conv.phone,
+              category: conv.appointmentDate ? 'Cita Agendada' : (conv.orders ? 'Solicitud WhatsApp' : 'Atención General'),
+              status: conv.appointmentDate ? 'En Proceso' : (conv.orders ? 'En Proceso' : 'Nuevo'),
+              progress: conv.appointmentDate ? 25 : (conv.orders ? 20 : 10),
+              dueDate: conv.appointmentDate || '',
+              description: `Registrado automáticamente desde WhatsApp.\n\nPedidos / Solicitud:\n${conv.orders || 'Consulta general en proceso.'}\n\nCaracterísticas:\n${conv.characteristics || 'Sin notas adicionales'}\n\nCita Agendada:\n${conv.appointmentDate || 'Sin cita programada'}`,
+              notes: [
+                {
+                  id: `note_${Date.now()}`,
+                  text: conv.appointmentDate 
+                    ? `Cita solicitada/agendada para: ${conv.appointmentDate}. Registrada automáticamente por IA WhatsApp.`
+                    : (conv.orders 
+                        ? `Pedido detectado automáticamente: ${conv.orders}`
+                        : `Contacto originado desde WhatsApp.`),
+                  date: new Date().toISOString(),
+                  author: 'DocuCraft WhatsApp IA',
+                }
+              ],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+
+            saveRecordCase(newRec);
+            hasNew = true;
+          } else {
+            // Update existing if new orders or appointments arrived
+            let recordChanged = false;
+            let updatedDueDate = existing.dueDate;
+            let updatedStatus = existing.status;
+            let updatedNotes = [...(existing.notes || [])];
+
+            if (conv.appointmentDate && existing.dueDate !== conv.appointmentDate) {
+              updatedDueDate = conv.appointmentDate;
+              updatedStatus = 'En Proceso';
+              updatedNotes.unshift({
+                id: `note_${Date.now()}`,
+                text: `Cita actualizada desde WhatsApp: ${conv.appointmentDate}`,
+                date: new Date().toISOString(),
+                author: 'DocuCraft WhatsApp IA',
+              });
+              recordChanged = true;
+            }
+
+            if (conv.orders && !existing.description.includes(conv.orders)) {
+              existing.description = `${existing.description}\n\nNueva Solicitud:\n${conv.orders}`;
+              recordChanged = true;
+            }
+
+            if (recordChanged) {
+              const updatedRec = {
+                ...existing,
+                fullName: conv.name && !existing.fullName.includes(conv.name) ? conv.name : existing.fullName,
+                dueDate: updatedDueDate,
+                status: updatedStatus,
+                notes: updatedNotes,
+                updatedAt: new Date().toISOString(),
+              };
+              saveRecordCase(updatedRec);
+              hasNew = true;
+            }
+          }
+        }
+
+        if (hasNew) {
+          setRecords(getRecordsCases());
+        }
+      } catch (err) {
+        // quiet fallback
+      }
+    };
+
+    syncFromWhatsApp();
+    const interval = setInterval(syncFromWhatsApp, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState('');

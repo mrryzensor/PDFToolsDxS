@@ -5,6 +5,9 @@
     "type": "interesado",
     "characteristics": "",
     "orders": "",
+    "appointmentDate": "",
+    "caseSynced": false,
+    "caseCode": "",
     "isPaused": false,
     "summary": "",
     "messages": [
@@ -46,12 +49,58 @@
     ],
     "lastMessageAt": 1794963142428
   },
+  "275161408368664": {
+    "phone": "275161408368664",
+    "name": "Noemí Rosales",
+    "type": "interesado",
+    "characteristics": "",
+    "orders": "",
+    "appointmentDate": "",
+    "caseSynced": false,
+    "caseCode": "",
+    "isPaused": true,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1794963816878657500",
+        "fromMe": false,
+        "sender": "Noemí Rosales",
+        "text": "Yendo",
+        "timestamp": 1794963816878
+      },
+      {
+        "id": "msg_1794963818919240800",
+        "fromMe": true,
+        "sender": "Noemí Rosales",
+        "text": "¡Hola! Qué gusto saludarte de nuevo. ¿En qué te ayudo hoy con DocuCraft Pro?",
+        "timestamp": 1794963818919
+      },
+      {
+        "id": "msg_1794963820953013200",
+        "fromMe": false,
+        "sender": "Noemí Rosales",
+        "text": "Estuve llamando",
+        "timestamp": 1794963820953
+      },
+      {
+        "id": "msg_1794963822196261300",
+        "fromMe": true,
+        "sender": "Noemí Rosales",
+        "text": "¡Hola! Disculpa los inconvenientes, por aquí estoy listo para atenderte de inmediato. ¿En qué te puedo ayudar hoy?",
+        "timestamp": 1794963822196
+      }
+    ],
+    "lastMessageAt": 1794963822196
+  },
   "42546348703968": {
     "phone": "42546348703968",
     "name": "David Salcedo Informático",
     "type": "interesado",
-    "characteristics": "",
-    "orders": "",
+    "characteristics": "Correo: mr.ryzensor@gmail.com",
+    "orders": "Inscripción al curso de Inteligencia Artificial con Antigravity",
+    "appointmentDate": "",
+    "caseSynced": false,
+    "caseCode": "",
     "isPaused": false,
     "summary": "",
     "messages": [
@@ -68,8 +117,36 @@
         "sender": "David Salcedo Informático",
         "text": "¡Hola! Soy tu asesor virtual de DocuCraft Pro, listo para ayudarte con tus documentos pedagógicos y administrativos. ¿En qué te puedo colaborar hoy?",
         "timestamp": 1794962870766
+      },
+      {
+        "id": "msg_1794963695687266200",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "hola, puedes inscribirme al curso de Inteligencia Artificial con Antigravity?",
+        "timestamp": 1794963695687
+      },
+      {
+        "id": "msg_1794963698069283400",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "¡Hola! Claro que sí, con gusto te ayudo a registrarte en el curso de Inteligencia Artificial con Antigravity. ¿Me podrías regalar tu nombre completo y correo electrónico, por favor?",
+        "timestamp": 1794963698069
+      },
+      {
+        "id": "msg_1794963714371648900",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "David Salcedo, mr.ryzensor@gmail.com",
+        "timestamp": 1794963714371
+      },
+      {
+        "id": "msg_1794963717157421100",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "¡Listo, David! Ya he registrado tus datos (mr.ryzensor@gmail.com) para el curso de Inteligencia Artificial con Antigravity. En breve te enviaremos los detalles de acceso a tu correo.",
+        "timestamp": 1794963717157
       }
     ],
-    "lastMessageAt": 1794962870766
+    "lastMessageAt": 1794963717157
   }
 }
