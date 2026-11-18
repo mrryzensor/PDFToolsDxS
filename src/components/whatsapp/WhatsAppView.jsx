@@ -3,7 +3,7 @@ import {
   MessageSquare, Send, Users, QrCode, RefreshCw, Power, 
   Settings2, Paperclip, CheckCircle2, AlertCircle, FileText, 
   Bot, ShieldAlert, Sparkles, Phone, Upload, Trash2, Check,
-  Radio, X, GraduationCap 
+  Radio, X, GraduationCap, PauseCircle, PlayCircle, Ban 
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { getStoredGeminiKeys } from '../../utils/storage';
@@ -48,6 +48,9 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
 
   // Sub tab: 'send' | 'groups' | 'bot_config'
   const [subTab, setSubTab] = useState('send');
+
+  // Input for pausing individual chat
+  const [pauseChatInput, setPauseChatInput] = useState('');
 
   // Fetch status from Go backend
   const fetchStatus = async () => {
@@ -230,6 +233,32 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
     }
   };
 
+  // Toggle individual chat pause
+  const handleTogglePauseChat = (targetPhone) => {
+    const clean = targetPhone.replace(/[^0-9]/g, '');
+    if (!clean) return;
+
+    const currentPaused = statusData.config?.pausedChats || [];
+    let updated;
+    if (currentPaused.includes(clean)) {
+      updated = currentPaused.filter((p) => p !== clean);
+      showToast(`Chat con ${clean} reanudado`, 'info');
+    } else {
+      updated = [...currentPaused, clean];
+      showToast(`Chat con ${clean} pausado (no responderá la IA)`, 'warning');
+    }
+
+    updateConfig({ pausedChats: updated });
+    setPauseChatInput('');
+  };
+
+  // Toggle global bot pause
+  const handleToggleGlobalPause = () => {
+    const current = statusData.config?.autoReply ?? true;
+    updateConfig({ autoReply: !current });
+    showToast(!current ? 'Chatbot activado globalmente' : 'Chatbot pausado globalmente', !current ? 'success' : 'warning');
+  };
+
   // Logout WhatsApp
   const handleLogout = async () => {
     try {
@@ -401,45 +430,119 @@ export const WhatsAppView = ({ onOpenApiKeysModal }) => {
           </div>
         )}
 
-        {/* AI & Chatbot Quick Toggles */}
+        {/* AI & Chatbot Quick Toggles & Pause Control */}
         <div className="p-3.5 rounded-xl bg-surface-container-lowest dark:bg-slate-950 border border-outline-variant/30 dark:border-slate-800 space-y-3">
-          <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
-            <Bot className="w-4 h-4 text-primary" />
-            Control de Respuestas Automáticas
-          </span>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+              <Bot className="w-4 h-4 text-primary" />
+              Control del Chatbot
+            </span>
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+              statusData.config?.autoReply !== false
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+            }`}>
+              {statusData.config?.autoReply !== false ? 'Activo' : 'Pausado'}
+            </span>
+          </div>
 
-          <label className="flex items-center justify-between cursor-pointer text-xs">
-            <span className="text-on-surface-variant">Chatbot Inteligente IA:</span>
-            <input
-              type="checkbox"
-              checked={statusData.config?.autoReply ?? true}
-              onChange={(e) => updateConfig({ autoReply: e.target.checked })}
-              className="accent-primary w-4 h-4 cursor-pointer"
-            />
-          </label>
+          {/* Global Pause Button */}
+          <button
+            type="button"
+            onClick={handleToggleGlobalPause}
+            className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
+              statusData.config?.autoReply !== false
+                ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+            }`}
+          >
+            {statusData.config?.autoReply !== false ? (
+              <>
+                <PauseCircle className="w-4 h-4 text-amber-500" />
+                <span>Pausar Chat Globalmente</span>
+              </>
+            ) : (
+              <>
+                <PlayCircle className="w-4 h-4 text-emerald-500" />
+                <span>Reanudar Chat Global</span>
+              </>
+            )}
+          </button>
 
-          <label className="flex items-center justify-between cursor-pointer text-xs">
-            <span className="text-on-surface-variant">Responder en Grupos:</span>
-            <input
-              type="checkbox"
-              checked={statusData.config?.allowGroups ?? false}
-              onChange={(e) => updateConfig({ allowGroups: e.target.checked })}
-              className="accent-primary w-4 h-4 cursor-pointer"
-            />
-          </label>
+          {/* Individual Chat Pause Section */}
+          <div className="pt-2 border-t border-outline-variant/20 dark:border-slate-800 space-y-2">
+            <span className="text-[11px] font-bold text-on-surface-variant flex items-center gap-1">
+              <Ban className="w-3.5 h-3.5 text-rose-500" />
+              Pausar Chat Independiente:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={pauseChatInput}
+                onChange={(e) => setPauseChatInput(e.target.value)}
+                placeholder="Número (ej: 51987654321)"
+                className="flex-1 px-2.5 py-1.5 rounded-lg border border-outline-variant/30 bg-surface-container-low text-[11px] text-on-surface focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => handleTogglePauseChat(pauseChatInput)}
+                disabled={!pauseChatInput.trim()}
+                className="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-on-primary text-[11px] font-bold transition-all disabled:opacity-40 shrink-0"
+              >
+                Pausar
+              </button>
+            </div>
 
-          <label className="flex items-center justify-between cursor-pointer text-xs">
-            <span className="text-on-surface-variant">Responder en Difusiones:</span>
-            <input
-              type="checkbox"
-              checked={statusData.config?.allowBroadcast ?? false}
-              onChange={(e) => updateConfig({ allowBroadcast: e.target.checked })}
-              className="accent-primary w-4 h-4 cursor-pointer"
-            />
-          </label>
+            {/* List of individually paused chats */}
+            {(statusData.config?.pausedChats && statusData.config.pausedChats.length > 0) && (
+              <div className="space-y-1 pt-1">
+                <span className="text-[10px] text-outline font-semibold">Chats pausados individualmente:</span>
+                <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                  {statusData.config.pausedChats.map((p) => (
+                    <span
+                      key={p}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[10px] font-mono"
+                    >
+                      +{p}
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePauseChat(p)}
+                        className="hover:text-rose-800 dark:hover:text-rose-200"
+                        title="Reanudar chat"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2 border-t border-outline-variant/20 dark:border-slate-800 space-y-2">
+            <label className="flex items-center justify-between cursor-pointer text-xs">
+              <span className="text-on-surface-variant">Responder en Grupos:</span>
+              <input
+                type="checkbox"
+                checked={statusData.config?.allowGroups ?? false}
+                onChange={(e) => updateConfig({ allowGroups: e.target.checked })}
+                className="accent-primary w-4 h-4 cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between cursor-pointer text-xs">
+              <span className="text-on-surface-variant">Responder en Difusiones:</span>
+              <input
+                type="checkbox"
+                checked={statusData.config?.allowBroadcast ?? false}
+                onChange={(e) => updateConfig({ allowBroadcast: e.target.checked })}
+                className="accent-primary w-4 h-4 cursor-pointer"
+              />
+            </label>
+          </div>
 
           <div className="pt-1 text-[10px] text-outline border-t border-outline-variant/20">
-            * Por seguridad pedagógica, las respuestas a grupos y difusiones están <strong>desactivadas por defecto</strong>.
+            * Al pausar global o individualmente, podrás chatear tú directamente de forma manual sin que la IA intervenga.
           </div>
         </div>
 

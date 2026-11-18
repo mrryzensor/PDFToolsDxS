@@ -31,7 +31,8 @@ type Config struct {
 	GeminiKey      string   `json:"geminiKey"`
 	GeminiKeys     []string `json:"geminiKeys"`
 	Models         []string `json:"models"`
-	AutoReply      bool     `json:"autoReply"`      // Chatbot toggle
+	AutoReply      bool     `json:"autoReply"`      // Chatbot toggle (global pause)
+	PausedChats    []string `json:"pausedChats"`    // List of phone numbers / JIDs paused individually
 }
 
 type WhatsAppServer struct {
@@ -227,6 +228,7 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 	allowGroups := s.config.AllowGroups
 	allowBroadcast := s.config.AllowBroadcast
 	autoReply := s.config.AutoReply
+	pausedChats := s.config.PausedChats
 	apiKey := s.config.GeminiKey
 	apiKeys := s.config.GeminiKeys
 	models := s.config.Models
@@ -240,8 +242,22 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 		allKeys = append(allKeys, apiKey)
 	}
 
+	// 1. GLOBAL PAUSE: If autoReply is false, bot never answers
 	if !autoReply {
 		return
+	}
+
+	senderUser := msg.Info.Sender.User
+	chatUser := msg.Info.Chat.User
+	chatString := msg.Info.Chat.String()
+
+	// 2. INDIVIDUAL PAUSE: Check if this sender or chat is individually paused
+	for _, p := range pausedChats {
+		cleanP := strings.ReplaceAll(strings.ReplaceAll(p, "+", ""), " ", "")
+		if cleanP != "" && (cleanP == senderUser || cleanP == chatUser || strings.Contains(chatString, cleanP)) {
+			log.Printf("[WhatsApp Bot] Chat pausado individualmente para %s. Ignorando respuesta automática.\n", senderUser)
+			return
+		}
 	}
 
 	isGroup := msg.Info.IsGroup
@@ -504,6 +520,9 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 			}
 			if len(newCfg.GeminiKeys) > 0 {
 				s.config.GeminiKeys = newCfg.GeminiKeys
+			}
+			if newCfg.PausedChats != nil {
+				s.config.PausedChats = newCfg.PausedChats
 			}
 			s.configLock.Unlock()
 			s.SaveConfig()
