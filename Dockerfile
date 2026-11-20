@@ -1,5 +1,5 @@
 # Stage 1: Build React/Vite Frontend
-FROM node:20-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -7,7 +7,8 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Build Go WhatsApp + API + Static Server
-FROM golang:1.24-alpine AS backend-builder
+FROM golang:1.26-alpine AS backend-builder
+ENV GOTOOLCHAIN=auto
 WORKDIR /app/server-go
 RUN apk add --no-cache git
 COPY server-go/go.mod server-go/go.sum ./
