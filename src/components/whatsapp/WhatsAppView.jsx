@@ -3,11 +3,12 @@ import {
   MessageSquare, Send, Users, QrCode, RefreshCw, Power, 
   Settings2, Paperclip, CheckCircle2, AlertCircle, FileText, 
   Bot, ShieldAlert, Sparkles, Phone, Upload, Trash2, Check,
-  Radio, X, GraduationCap, PauseCircle, PlayCircle, Ban, MessagesSquare
+  Radio, X, GraduationCap, PauseCircle, PlayCircle, Ban, MessagesSquare, Package
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { getStoredGeminiKeys } from '../../utils/storage';
 import { WhatsAppConversationsView } from './WhatsAppConversationsView';
+import { WhatsAppCatalogView } from './WhatsAppCatalogView';
 
 const API_BASE = 'http://localhost:8089';
 
@@ -576,6 +577,7 @@ export const WhatsAppView = ({ onOpenApiKeysModal, onNavigateToRecords }) => {
             {[
               { id: 'send', label: 'Envío Individual / Masivo', icon: Send },
               { id: 'conversations', label: 'Conversaciones / CRM', icon: MessagesSquare },
+              { id: 'catalog', label: 'Productos & Servicios', icon: Package },
               { id: 'groups', label: `Grupos Extraídos (${groups.length})`, icon: Users },
               { id: 'bot_info', label: 'Habilidades del Chatbot (CNEB/PDF)', icon: Sparkles },
             ].map((tab) => {
@@ -615,6 +617,11 @@ export const WhatsAppView = ({ onOpenApiKeysModal, onNavigateToRecords }) => {
         {/* Tab 0: CONVERSATIONS / CRM */}
         {subTab === 'conversations' && (
           <WhatsAppConversationsView onNavigateToRecords={onNavigateToRecords} />
+        )}
+
+        {/* Tab: CATALOG (PRODUCTS & SERVICES) */}
+        {subTab === 'catalog' && (
+          <WhatsAppCatalogView statusData={statusData} onUpdateConfig={updateConfig} />
         )}
 
         {/* Tab 1: SEND MESSAGE / MASSIVE CAMPAIGN */}

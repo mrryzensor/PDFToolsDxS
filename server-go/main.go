@@ -27,13 +27,40 @@ import (
 )
 
 type Config struct {
-	AllowGroups    bool     `json:"allowGroups"`    // Default false
-	AllowBroadcast bool     `json:"allowBroadcast"` // Default false
-	GeminiKey      string   `json:"geminiKey"`
-	GeminiKeys     []string `json:"geminiKeys"`
-	Models         []string `json:"models"`
-	AutoReply      bool     `json:"autoReply"`      // Chatbot toggle (global pause)
-	PausedChats    []string `json:"pausedChats"`    // List of phone numbers / JIDs paused individually
+	AllowGroups            bool     `json:"allowGroups"`            // Default false
+	AllowBroadcast         bool     `json:"allowBroadcast"`         // Default false
+	GeminiKey              string   `json:"geminiKey"`
+	GeminiKeys             []string `json:"geminiKeys"`
+	Models                 []string `json:"models"`
+	AutoReply              bool     `json:"autoReply"`              // Chatbot toggle (global pause)
+	PausedChats            []string `json:"pausedChats"`            // List of phone numbers / JIDs paused individually
+	AuthorizedNumbers      []string `json:"authorizedNumbers"`      // Numbers allowed to manage catalog via WhatsApp
+	CatalogCommand         string   `json:"catalogCommand"`         // Custom command prefix, e.g. "/espacio"
+	MessageDebounceSeconds int      `json:"messageDebounceSeconds"` // Seconds to group consecutive messages (default 5)
+}
+
+type CatalogItem struct {
+	ID              string  `json:"id"`
+	Kind            string  `json:"kind"`            // "producto" | "servicio"
+	Name            string  `json:"name"`
+	Price           float64 `json:"price"`
+	Currency        string  `json:"currency"`        // e.g. "USD", "PEN"
+	Category        string  `json:"category"`        // e.g. "Curso", "Software", "Asesoría"
+	Duration        string  `json:"duration"`        // e.g. "4 semanas", "Acceso de por vida"
+	Modality        string  `json:"modality"`        // e.g. "Online", "Presencial", "Digital"
+	Characteristics string  `json:"characteristics"` // Key features
+	Description     string  `json:"description"`
+	Active          bool    `json:"active"`
+	CreatedAt       int64   `json:"createdAt"`
+	UpdatedAt       int64   `json:"updatedAt"`
+}
+
+type PendingMessageBatch struct {
+	ChatJID    types.JID
+	SenderUser string
+	PushName   string
+	Texts      []string
+	Timer      *time.Timer
 }
 
 type ChatMessage struct {
@@ -72,15 +99,21 @@ type WhatsAppServer struct {
 	sessionsLock      sync.RWMutex
 	conversations     map[string]*ContactConversation
 	conversationsLock sync.RWMutex
+	catalog           []CatalogItem
+	catalogLock       sync.RWMutex
+	pendingBatches    map[string]*PendingMessageBatch
+	pendingLock       sync.Mutex
 }
 
 var serverInstance *WhatsAppServer
 
 func NewWhatsAppServer() *WhatsAppServer {
 	cfg := Config{
-		AllowGroups:    false,
-		AllowBroadcast: false,
-		AutoReply:      true,
+		AllowGroups:            false,
+		AllowBroadcast:         false,
+		AutoReply:              true,
+		CatalogCommand:         "/espacio",
+		MessageDebounceSeconds: 5,
 		Models: []string{
 			"gemini-3.5-flash-lite",
 			"gemini-3.5-flash",
@@ -95,6 +128,12 @@ func NewWhatsAppServer() *WhatsAppServer {
 	if data, err := os.ReadFile("whatsapp_config.json"); err == nil {
 		_ = json.Unmarshal(data, &cfg)
 	}
+	if strings.TrimSpace(cfg.CatalogCommand) == "" {
+		cfg.CatalogCommand = "/espacio"
+	}
+	if cfg.MessageDebounceSeconds <= 0 {
+		cfg.MessageDebounceSeconds = 5
+	}
 
 	var savedSessions []map[string]interface{}
 	if data, err := os.ReadFile("whatsapp_sessions.json"); err == nil {
@@ -106,12 +145,26 @@ func NewWhatsAppServer() *WhatsAppServer {
 		_ = json.Unmarshal(data, &savedConversations)
 	}
 
-	return &WhatsAppServer{
-		config:        cfg,
-		status:        "disconnected",
-		sessions:      savedSessions,
-		conversations: savedConversations,
+	var savedCatalog []CatalogItem
+	if data, err := os.ReadFile("whatsapp_catalog.json"); err == nil {
+		_ = json.Unmarshal(data, &savedCatalog)
 	}
+
+	return &WhatsAppServer{
+		config:         cfg,
+		status:         "disconnected",
+		sessions:       savedSessions,
+		conversations:  savedConversations,
+		catalog:        savedCatalog,
+		pendingBatches: make(map[string]*PendingMessageBatch),
+	}
+}
+
+func (s *WhatsAppServer) SaveCatalog() {
+	s.catalogLock.RLock()
+	defer s.catalogLock.RUnlock()
+	bytes, _ := json.MarshalIndent(s.catalog, "", "  ")
+	_ = os.WriteFile("whatsapp_catalog.json", bytes, 0644)
 }
 
 func (s *WhatsAppServer) SaveConfig() {
@@ -535,7 +588,7 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 
 	log.Printf("[WhatsApp In] De: %s (%s) | Mensaje: %s\n", senderUser, senderPushName, text)
 
-	// Save incoming message in contact conversation
+	// Save incoming message in contact conversation immediately
 	s.AddMessageToConversation(senderUser, senderPushName, false, text, allKeys, models)
 
 	// Retrieve conversation to check individual pause
@@ -545,9 +598,69 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 		return
 	}
 
+	// Check if message is a custom catalog command (e.g. "/espacio ...")
+	s.configLock.RLock()
+	catalogCmd := strings.TrimSpace(s.config.CatalogCommand)
+	debounceSec := s.config.MessageDebounceSeconds
+	s.configLock.RUnlock()
+
+	if catalogCmd == "" {
+		catalogCmd = "/espacio"
+	}
+	if strings.HasPrefix(strings.ToLower(text), strings.ToLower(catalogCmd)) {
+		s.handleCatalogCommand(msg.Info.Chat, senderUser, chatUser, text, catalogCmd, allKeys, models)
+		return
+	}
+
+	// Debounce / Group consecutive messages within N seconds (default 5s)
+	if debounceSec <= 0 {
+		s.processIncomingText(msg.Info.Chat, senderUser, senderPushName, text, allKeys, models)
+		return
+	}
+
+	s.pendingLock.Lock()
+	batch, exists := s.pendingBatches[senderUser]
+	if exists {
+		batch.Texts = append(batch.Texts, text)
+		if batch.Timer != nil {
+			batch.Timer.Stop()
+		}
+	} else {
+		batch = &PendingMessageBatch{
+			ChatJID:    msg.Info.Chat,
+			SenderUser: senderUser,
+			PushName:   senderPushName,
+			Texts:      []string{text},
+		}
+		s.pendingBatches[senderUser] = batch
+	}
+
+	batch.Timer = time.AfterFunc(time.Duration(debounceSec)*time.Second, func() {
+		s.pendingLock.Lock()
+		b, ok := s.pendingBatches[senderUser]
+		if !ok {
+			s.pendingLock.Unlock()
+			return
+		}
+		delete(s.pendingBatches, senderUser)
+		combinedText := strings.Join(b.Texts, "\n")
+		s.pendingLock.Unlock()
+
+		log.Printf("[WhatsApp Debounce] Procesando %d mensajes agrupados de %s\n", len(b.Texts), senderUser)
+		s.processIncomingText(b.ChatJID, b.SenderUser, b.PushName, combinedText, allKeys, models)
+	})
+	s.pendingLock.Unlock()
+}
+
+func (s *WhatsAppServer) processIncomingText(chatJID types.JID, senderUser string, senderPushName string, text string, allKeys []string, models []string) {
+	conv := s.GetOrCreateConversation(senderUser, senderPushName)
+	if conv.IsPaused {
+		return
+	}
+
 	// If no Gemini Key is configured, notify politely
 	if len(allKeys) == 0 {
-		s.sendTextMessage(msg.Info.Chat, "Hola! El chatbot est� activo pero a�n no tiene configurada su Gemini API Key en el panel de DocuCraft Pro.")
+		s.sendTextMessage(chatJID, "Hola! El chatbot est� activo pero a�n no tiene configurada su Gemini API Key en el panel de DocuCraft Pro.")
 		return
 	}
 
@@ -566,7 +679,7 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 
 	if pedagogicalTrigger {
 		ackMsg := "¡Entendido! Estoy elaborando tu sesión de aprendizaje CNEB completa y generando el documento PDF. Dame unos segundos..."
-		s.sendTextMessage(msg.Info.Chat, ackMsg)
+		s.sendTextMessage(chatJID, ackMsg)
 		s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, ackMsg, allKeys, models)
 
 		systemPrompt := `Eres un especialista pedagógico del Ministerio de Educación del Perú (MINEDU) y experto en el Currículo Nacional (CNEB).
@@ -634,7 +747,7 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 					"fecha":                  nowStr,
 					"modelUsed":              usedModel,
 					"origin":                 "WhatsApp",
-					"recipient":              msg.Info.Sender.User,
+					"recipient":              senderUser,
 				}
 				s.SaveSessionRecord(record)
 
@@ -642,7 +755,7 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 				if pdfErr == nil && len(pdfBytes) > 0 {
 					filename := fmt.Sprintf("Sesion_%s.pdf", strings.ReplaceAll(sData.Titulo, " ", "_"))
 					botCaption := fmt.Sprintf("¡Listo! Aquí tienes tu sesión pedagógica oficial en PDF: *%s*", sData.Titulo)
-					s.sendDocument(msg.Info.Chat, pdfBytes, filename, "application/pdf", botCaption)
+					s.sendDocument(chatJID, pdfBytes, filename, "application/pdf", botCaption)
 					s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, botCaption+" [Archivo PDF Adjunto]", allKeys, models)
 					return
 				} else {
@@ -656,13 +769,31 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 		}
 	}
 
+	// Build active catalog context for the AI assistant
+	var catalogContext strings.Builder
+	s.catalogLock.RLock()
+	activeCount := 0
+	for _, item := range s.catalog {
+		if !item.Active {
+			continue
+		}
+		activeCount++
+		if activeCount == 1 {
+			catalogContext.WriteString("\nCATÁLOGO OFICIAL DE PRODUCTOS Y SERVICIOS DISPONIBLES:\n")
+		}
+		catalogContext.WriteString(fmt.Sprintf("- [%s] %s | Precio: %.2f %s | Categoría: %s | Modalidad: %s | Duración: %s | Características: %s | Descripción: %s\n",
+			strings.ToUpper(item.Kind), item.Name, item.Price, item.Currency, item.Category, item.Modality, item.Duration, item.Characteristics, item.Description))
+	}
+	s.catalogLock.RUnlock()
+
 	// General short chat with conversation history context
 	chatSystemPrompt := `Eres el asesor virtual inteligente de DocuCraft Pro en WhatsApp.
 REGLAS:
 1. Responde de forma muy concisa, cordial y en máximo 2 a 3 oraciones.
 2. Si te piden una sesión pedagógica, di '¡Claro! Enseguida la preparo' y no te quedes en bucles ni pidas más datos; créala.
-3. Ayudas con: Sesiones de aprendizaje CNEB, Certificados con QR, registro de alumnos/clientes y expedientes.
-4. Conoce al cliente por su nombre o pedidos previos si ya te los ha dado en la conversación.`
+3. Ayudas con: Sesiones de aprendizaje CNEB, Certificados con QR, registro de alumnos/clientes, citas, productos y servicios.
+4. Conoce al cliente por su nombre o pedidos previos si ya te los ha dado en la conversación.
+5. Si preguntan por cursos, productos o servicios, usa EXACTAMENTE la información y precios del catálogo oficial.` + catalogContext.String()
 
 	// Build chat history for CallGeminiChatWithKeys
 	var chatHistory []GeminiContent
@@ -692,11 +823,11 @@ REGLAS:
 	respText, _, err := CallGeminiChatWithKeys(allKeys, models, chatSystemPrompt, chatHistory)
 	if err != nil {
 		log.Printf("[WhatsApp Bot] Error general Gemini: %v\n", err)
-		s.sendTextMessage(msg.Info.Chat, "Hola! Tuve una breve pausa con la IA, por favor repíteme tu consulta.")
+		s.sendTextMessage(chatJID, "Hola! Tuve una breve pausa con la IA, por favor repíteme tu consulta.")
 		return
 	}
 
-	s.sendTextMessage(msg.Info.Chat, respText)
+	s.sendTextMessage(chatJID, respText)
 	s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, respText, allKeys, models)
 }
 
@@ -811,6 +942,15 @@ func handleConfig(w http.ResponseWriter, r *http.Request) {
 			}
 			if newCfg.PausedChats != nil {
 				s.config.PausedChats = newCfg.PausedChats
+			}
+			if newCfg.AuthorizedNumbers != nil {
+				s.config.AuthorizedNumbers = newCfg.AuthorizedNumbers
+			}
+			if strings.TrimSpace(newCfg.CatalogCommand) != "" {
+				s.config.CatalogCommand = strings.TrimSpace(newCfg.CatalogCommand)
+			}
+			if newCfg.MessageDebounceSeconds >= 0 {
+				s.config.MessageDebounceSeconds = newCfg.MessageDebounceSeconds
 			}
 			s.configLock.Unlock()
 			s.SaveConfig()
@@ -1192,6 +1332,328 @@ func handleTogglePauseConversation(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "phone": cleanPhone, "isPaused": newState})
 }
 
+type CatalogCommandIntent struct {
+	Action          string  `json:"action"`          // "create" | "update" | "delete" | "list"
+	TargetName      string  `json:"targetName"`      // Name to match for update/delete
+	Kind            string  `json:"kind"`            // "producto" | "servicio"
+	Name            string  `json:"name"`
+	Price           float64 `json:"price"`
+	Currency        string  `json:"currency"`        // "USD", "PEN", etc.
+	Category        string  `json:"category"`
+	Duration        string  `json:"duration"`
+	Modality        string  `json:"modality"`
+	Characteristics string  `json:"characteristics"`
+	Description     string  `json:"description"`
+}
+
+func (s *WhatsAppServer) handleCatalogCommand(chatJID types.JID, senderUser string, chatUser string, fullText string, cmdPrefix string, allKeys []string, models []string) {
+	// 1. Check authorization
+	s.configLock.RLock()
+	authNums := s.config.AuthorizedNumbers
+	s.configLock.RUnlock()
+
+	isAuthorized := false
+	cleanSender := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(senderUser, "+", ""), " ", ""), "-", "")
+	cleanChat := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(chatUser, "+", ""), " ", ""), "-", "")
+	for _, n := range authNums {
+		cleanAuth := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(n, "+", ""), " ", ""), "-", "")
+		if cleanAuth != "" && (cleanAuth == cleanSender || cleanAuth == cleanChat || strings.HasSuffix(cleanSender, cleanAuth) || strings.HasSuffix(cleanChat, cleanAuth)) {
+			isAuthorized = true
+			break
+		}
+	}
+
+	if !isAuthorized {
+		reply := "⛔ No tienes autorización para usar el comando de gestión de catálogo (" + cmdPrefix + ")."
+		s.sendTextMessage(chatJID, reply)
+		s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, reply, allKeys, models)
+		return
+	}
+
+	if len(allKeys) == 0 {
+		reply := "⚠️ No hay claves de Gemini configuradas para interpretar el comando."
+		s.sendTextMessage(chatJID, reply)
+		return
+	}
+
+	// Strip command prefix
+	instruction := strings.TrimSpace(fullText[len(cmdPrefix):])
+	if instruction == "" {
+		reply := fmt.Sprintf("ℹ️ Usa *%s* seguido de tu instrucción.\nEjemplo: _%s crea el curso de Apps en Desktop Windows + Técnico PC a precio de 37 USD_", cmdPrefix, cmdPrefix)
+		s.sendTextMessage(chatJID, reply)
+		s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, reply, allKeys, models)
+		return
+	}
+
+	// Build existing catalog names for update/delete matching
+	s.catalogLock.RLock()
+	var existingNames []string
+	for _, item := range s.catalog {
+		existingNames = append(existingNames, fmt.Sprintf("%s (%s - %.2f %s)", item.Name, item.Kind, item.Price, item.Currency))
+	}
+	s.catalogLock.RUnlock()
+
+	systemPrompt := `Eres un intérprete de comandos de catálogo de Productos y Servicios.
+El usuario autorizado quiere crear, modificar/actualizar, eliminar o listar productos o servicios.
+Analiza la instrucción y devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
+{
+  "action": "create" | "update" | "delete" | "list",
+  "targetName": "nombre del producto/servicio existente si es update o delete",
+  "kind": "producto" | "servicio",
+  "name": "Nombre del producto o servicio",
+  "price": 37.0,
+  "currency": "USD",
+  "category": "Curso" | "Software" | "Asesoría" | "Servicio Técnico" | "Otro",
+  "duration": "duración o acceso si se menciona, sino vacío",
+  "modality": "Online" | "Presencial" | "Digital" | "",
+  "characteristics": "características clave separadas por comas si se mencionan",
+  "description": "descripción breve y atractiva basada en la instrucción"
+}
+Reglas:
+- Cursos, capacitaciones, asesorías, talleres o soporte son "servicio".
+- Software, licencias, libros, equipos o guías descargables son "producto".
+- Si no especifica moneda, usa "USD" o "PEN" según el contexto (por defecto "USD").`
+
+	userPrompt := fmt.Sprintf("Catálogo actual:\n%s\n\nInstrucción del administrador:\n%s", strings.Join(existingNames, "\n"), instruction)
+	jsonText, _, err := CallGeminiWithKeys(allKeys, models, systemPrompt, userPrompt, false)
+	if err != nil {
+		reply := "❌ Error al interpretar el comando con IA. Intenta nuevamente."
+		s.sendTextMessage(chatJID, reply)
+		return
+	}
+
+	cleanJSON := strings.TrimSpace(jsonText)
+	if start := strings.Index(cleanJSON, "{"); start != -1 {
+		if end := strings.LastIndex(cleanJSON, "}"); end != -1 && end > start {
+			cleanJSON = cleanJSON[start : end+1]
+		}
+	}
+
+	var intent CatalogCommandIntent
+	if err := json.Unmarshal([]byte(cleanJSON), &intent); err != nil {
+		reply := "❌ No pude entender la estructura del comando. Especifica si deseas crear, editar o eliminar un producto/servicio."
+		s.sendTextMessage(chatJID, reply)
+		return
+	}
+
+	now := time.Now().UnixMilli()
+	var reply string
+
+	switch strings.ToLower(intent.Action) {
+	case "list":
+		s.catalogLock.RLock()
+		if len(s.catalog) == 0 {
+			reply = "📦 El catálogo está vacío actualmente."
+		} else {
+			var sb strings.Builder
+			sb.WriteString("📦 *Catálogo Actual:*\n")
+			for i, item := range s.catalog {
+				status := "✅"
+				if !item.Active {
+					status = "⏸️"
+				}
+				sb.WriteString(fmt.Sprintf("%d. %s *%s* (%s) - %.2f %s\n", i+1, status, item.Name, item.Kind, item.Price, item.Currency))
+			}
+			reply = sb.String()
+		}
+		s.catalogLock.RUnlock()
+
+	case "create":
+		kind := intent.Kind
+		if kind != "producto" && kind != "servicio" {
+			kind = "servicio"
+		}
+		currency := intent.Currency
+		if currency == "" {
+			currency = "USD"
+		}
+		newItem := CatalogItem{
+			ID:              fmt.Sprintf("cat_%d", now),
+			Kind:            kind,
+			Name:            intent.Name,
+			Price:           intent.Price,
+			Currency:        currency,
+			Category:        intent.Category,
+			Duration:        intent.Duration,
+			Modality:        intent.Modality,
+			Characteristics: intent.Characteristics,
+			Description:     intent.Description,
+			Active:          true,
+			CreatedAt:       now,
+			UpdatedAt:       now,
+		}
+		s.catalogLock.Lock()
+		s.catalog = append([]CatalogItem{newItem}, s.catalog...)
+		s.catalogLock.Unlock()
+		s.SaveCatalog()
+		reply = fmt.Sprintf("✅ *%s creado exitosamente:*\n📌 *Nombre:* %s\n💰 *Precio:* %.2f %s\n🏷️ *Categoría:* %s",
+			strings.Title(kind), newItem.Name, newItem.Price, newItem.Currency, newItem.Category)
+
+	case "update":
+		target := strings.ToLower(strings.TrimSpace(intent.TargetName))
+		if target == "" {
+			target = strings.ToLower(strings.TrimSpace(intent.Name))
+		}
+		updated := false
+		var updatedName string
+		s.catalogLock.Lock()
+		for i := range s.catalog {
+			if strings.Contains(strings.ToLower(s.catalog[i].Name), target) || strings.Contains(target, strings.ToLower(s.catalog[i].Name)) {
+				if intent.Name != "" {
+					s.catalog[i].Name = intent.Name
+				}
+				if intent.Price > 0 {
+					s.catalog[i].Price = intent.Price
+				}
+				if intent.Currency != "" {
+					s.catalog[i].Currency = intent.Currency
+				}
+				if intent.Category != "" {
+					s.catalog[i].Category = intent.Category
+				}
+				if intent.Characteristics != "" {
+					s.catalog[i].Characteristics = intent.Characteristics
+				}
+				if intent.Description != "" {
+					s.catalog[i].Description = intent.Description
+				}
+				s.catalog[i].UpdatedAt = now
+				updatedName = s.catalog[i].Name
+				updated = true
+				break
+			}
+		}
+		s.catalogLock.Unlock()
+		if updated {
+			s.SaveCatalog()
+			reply = fmt.Sprintf("✏️ *Catálogo actualizado:* %s", updatedName)
+		} else {
+			reply = fmt.Sprintf("⚠️ No encontré ningún producto/servicio que coincida con *%s*.", intent.TargetName)
+		}
+
+	case "delete":
+		target := strings.ToLower(strings.TrimSpace(intent.TargetName))
+		if target == "" {
+			target = strings.ToLower(strings.TrimSpace(intent.Name))
+		}
+		deleted := false
+		var deletedName string
+		s.catalogLock.Lock()
+		var remaining []CatalogItem
+		for _, item := range s.catalog {
+			if !deleted && (strings.Contains(strings.ToLower(item.Name), target) || strings.Contains(target, strings.ToLower(item.Name))) {
+				deleted = true
+				deletedName = item.Name
+				continue
+			}
+			remaining = append(remaining, item)
+		}
+		s.catalog = remaining
+		s.catalogLock.Unlock()
+		if deleted {
+			s.SaveCatalog()
+			reply = fmt.Sprintf("🗑️ *Eliminado del catálogo:* %s", deletedName)
+		} else {
+			reply = fmt.Sprintf("⚠️ No encontré ningún elemento para eliminar con el nombre *%s*.", intent.TargetName)
+		}
+
+	default:
+		reply = "ℹ️ Acción no reconocida. Usa crear, actualizar, eliminar o listar."
+	}
+
+	s.sendTextMessage(chatJID, reply)
+	s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, reply, allKeys, models)
+}
+
+func handleGetCatalog(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	s := serverInstance
+	s.catalogLock.RLock()
+	items := s.catalog
+	s.catalogLock.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	if items == nil {
+		items = []CatalogItem{}
+	}
+	json.NewEncoder(w).Encode(items)
+}
+
+func handleSaveCatalogItem(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	var item CatalogItem
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		http.Error(w, `{"error":"payload invalido"}`, http.StatusBadRequest)
+		return
+	}
+
+	now := time.Now().UnixMilli()
+	s := serverInstance
+	s.catalogLock.Lock()
+	if item.ID == "" {
+		item.ID = fmt.Sprintf("cat_%d", now)
+		item.CreatedAt = now
+		item.UpdatedAt = now
+		s.catalog = append([]CatalogItem{item}, s.catalog...)
+	} else {
+		found := false
+		for i := range s.catalog {
+			if s.catalog[i].ID == item.ID {
+				item.CreatedAt = s.catalog[i].CreatedAt
+				item.UpdatedAt = now
+				s.catalog[i] = item
+				found = true
+				break
+			}
+		}
+		if !found {
+			item.CreatedAt = now
+			item.UpdatedAt = now
+			s.catalog = append([]CatalogItem{item}, s.catalog...)
+		}
+	}
+	s.catalogLock.Unlock()
+	s.SaveCatalog()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "item": item})
+}
+
+func handleDeleteCatalogItem(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
+		http.Error(w, `{"error":"id requerido"}`, http.StatusBadRequest)
+		return
+	}
+
+	s := serverInstance
+	s.catalogLock.Lock()
+	var remaining []CatalogItem
+	for _, item := range s.catalog {
+		if item.ID != req.ID {
+			remaining = append(remaining, item)
+		}
+	}
+	s.catalog = remaining
+	s.catalogLock.Unlock()
+	s.SaveCatalog()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
 func main() {
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
@@ -1210,6 +1672,9 @@ func main() {
 	http.HandleFunc("/api/whatsapp/conversations", handleGetConversations)
 	http.HandleFunc("/api/whatsapp/conversations/update", handleUpdateConversation)
 	http.HandleFunc("/api/whatsapp/conversations/toggle-pause", handleTogglePauseConversation)
+	http.HandleFunc("/api/whatsapp/catalog", handleGetCatalog)
+	http.HandleFunc("/api/whatsapp/catalog/save", handleSaveCatalogItem)
+	http.HandleFunc("/api/whatsapp/catalog/delete", handleDeleteCatalogItem)
 
 	port := 8089
 	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)

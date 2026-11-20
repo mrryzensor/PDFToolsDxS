@@ -1,4 +1,216 @@
 {
+  "168508830814451": {
+    "phone": "168508830814451",
+    "name": "Obsta. Ro Gut",
+    "type": "interesado",
+    "characteristics": "",
+    "orders": "",
+    "appointmentDate": "4:00 PM",
+    "caseSynced": false,
+    "caseCode": "",
+    "isPaused": false,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1795134596332819300",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Chatitoo",
+        "timestamp": 1795134596332
+      },
+      {
+        "id": "msg_1795134596372456200",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Claro pe pata",
+        "timestamp": 1795134596372
+      },
+      {
+        "id": "msg_1795134596387576200",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Me avisas pa darle",
+        "timestamp": 1795134596387
+      },
+      {
+        "id": "msg_1795134596881806500",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Dame 10 mins",
+        "timestamp": 1795134596881
+      },
+      {
+        "id": "msg_1795134597055409500",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Voy a salir a comprar",
+        "timestamp": 1795134597055
+      },
+      {
+        "id": "msg_1795134597233776700",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Un toq",
+        "timestamp": 1795134597233
+      },
+      {
+        "id": "msg_1795134597241547900",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Mi rey",
+        "timestamp": 1795134597241
+      },
+      {
+        "id": "msg_1795134598410745900",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "ya cholo",
+        "timestamp": 1795134598410
+      },
+      {
+        "id": "msg_1795134598504526000",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "gogo",
+        "timestamp": 1795134598504
+      },
+      {
+        "id": "msg_1795134598634556500",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "prende la laptop",
+        "timestamp": 1795134598634
+      },
+      {
+        "id": "msg_1795134598636631800",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "bb",
+        "timestamp": 1795134598636
+      },
+      {
+        "id": "msg_1795134598642380500",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "o vas a jatear mi rey?",
+        "timestamp": 1795134598642
+      },
+      {
+        "id": "msg_1795134599171482000",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "jejje si",
+        "timestamp": 1795134599171
+      },
+      {
+        "id": "msg_1795134599178434800",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "gogo",
+        "timestamp": 1795134599178
+      },
+      {
+        "id": "msg_1795134599182227300",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "bb",
+        "timestamp": 1795134599182
+      },
+      {
+        "id": "msg_1795134648588013700",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "4pm Masomenos",
+        "timestamp": 1795134648588
+      },
+      {
+        "id": "msg_1795134648726911900",
+        "fromMe": false,
+        "sender": "Obsta. Ro Gut",
+        "text": "Chatito",
+        "timestamp": 1795134648726
+      },
+      {
+        "id": "msg_1795134654905567500",
+        "fromMe": true,
+        "sender": "Obsta. Ro Gut",
+        "text": "¡Aquí sigo activo y listo, nada de jatear! 💻 Cuéntame, ¿qué preparamos hoy: una sesión CNEB, certificados o algún registro de DocuCraft Pro?",
+        "timestamp": 1795134654906
+      },
+      {
+        "id": "msg_1795134655343471300",
+        "fromMe": true,
+        "sender": "Obsta. Ro Gut",
+        "text": "¡Hola! Veo que andas ocupado, así que aquí estaré esperando cuando regreses. Avísame apenas prendas la laptop para darle con todo a tus pedidos.",
+        "timestamp": 1795134655343
+      }
+    ],
+    "lastMessageAt": 1795134655343
+  },
+  "206725516931241": {
+    "phone": "206725516931241",
+    "name": "Moisés Orizano",
+    "type": "interesado",
+    "characteristics": "Varón",
+    "orders": "Está el Disney? | Verificación de código enviado | Error por límite de solicitudes alcanzado",
+    "appointmentDate": "",
+    "caseSynced": false,
+    "caseCode": "",
+    "isPaused": false,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1795134585023067600",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Varón",
+        "timestamp": 1795134585023
+      },
+      {
+        "id": "msg_1795134585050363300",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Está el Disney?",
+        "timestamp": 1795134585050
+      },
+      {
+        "id": "msg_1795134585092135700",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Xd",
+        "timestamp": 1795134585092
+      },
+      {
+        "id": "msg_1795134585590752400",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Así sale Xd",
+        "timestamp": 1795134585590
+      },
+      {
+        "id": "msg_1795134585828846500",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Alcanzaste el límite de solicitudes dice",
+        "timestamp": 1795134585828
+      },
+      {
+        "id": "msg_1795134586375721000",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Ahí debe haber llegado un código",
+        "timestamp": 1795134586375
+      },
+      {
+        "id": "msg_1795134594088371000",
+        "fromMe": true,
+        "sender": "Moisés Orizano",
+        "text": "¡Hola! Parece que hubo un pequeño error con el mensaje anterior. ¿En qué te puedo ayudar hoy con DocuCraft Pro, ya sea sobre sesiones CNEB, certificados o nuestros servicios?",
+        "timestamp": 1795134594088
+      }
+    ],
+    "lastMessageAt": 1795134594088
+  },
   "268406230098154": {
     "phone": "268406230098154",
     "name": "Ing David Salcedo",
@@ -92,12 +304,55 @@
     ],
     "lastMessageAt": 1794963822196
   },
+  "28385489215706": {
+    "phone": "28385489215706",
+    "name": "Tuty",
+    "type": "interesado",
+    "characteristics": "",
+    "orders": "",
+    "appointmentDate": "mañana por la tarde",
+    "caseSynced": false,
+    "caseCode": "",
+    "isPaused": false,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1795134591870859900",
+        "fromMe": false,
+        "sender": "Tuty",
+        "text": "No",
+        "timestamp": 1795134591870
+      },
+      {
+        "id": "msg_1795134591905443900",
+        "fromMe": false,
+        "sender": "Tuty",
+        "text": "Mañana viajaré aún con calma",
+        "timestamp": 1795134591905
+      },
+      {
+        "id": "msg_1795134592663745600",
+        "fromMe": false,
+        "sender": "Tuty",
+        "text": "Sí pues, mañana aún continúa, pero supongo que para la tarde ya estará libre",
+        "timestamp": 1795134592663
+      },
+      {
+        "id": "msg_1795134600041253200",
+        "fromMe": true,
+        "sender": "Tuty",
+        "text": "¡Hola! Entiendo perfectamente tu agenda para mañana por la tarde. ¿En qué te puedo ayudar hoy con DocuCraft Pro, ya sea sobre certificados, sesiones o registros?",
+        "timestamp": 1795134600041
+      }
+    ],
+    "lastMessageAt": 1795134600041
+  },
   "42546348703968": {
     "phone": "42546348703968",
     "name": "David Salcedo Informático",
-    "type": "interesado",
-    "characteristics": "Correo: mr.ryzensor@gmail.com",
-    "orders": "Inscripción al curso de Inteligencia Artificial con Antigravity",
+    "type": "cliente",
+    "characteristics": "Correo: mr.ryzensor@gmail.com | Correo: mr.ryzensor@gmail.com, Correo Office: carmonadocsperu@gmail.com, Precio: 15 USD permanente | Correo Office: andreamed2503@247edu.online, Pass: Tempcngwusm3!2",
+    "orders": "Inscripción al curso de Inteligencia Artificial con Antigravity | Adquisición de cuenta Office 365 o Autodesk | Creación y activación de cuenta de Office 365 para el correo carmonadocsperu@gmail.com | Creación y activación de cuenta Office 365 para andreamed2503@gmail.com",
     "appointmentDate": "",
     "caseSynced": false,
     "caseCode": "",
@@ -145,8 +400,43 @@
         "sender": "David Salcedo Informático",
         "text": "¡Listo, David! Ya he registrado tus datos (mr.ryzensor@gmail.com) para el curso de Inteligencia Artificial con Antigravity. En breve te enviaremos los detalles de acceso a tu correo.",
         "timestamp": 1794963717157
+      },
+      {
+        "id": "msg_1795134586922978100",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "Para procesar la cuenta de *Office 365*, recuerda que su precio es de *15 USD* (duración permanente, sin incluir Outlook ni OneDrive). 💻✨ Por otro lado, para activar tu cuenta de *Autodesk* (educativa, asignación directa a correo por 3 años), el precio es de *20 USD*. 📐\n\n¿Te gustaría proceder con la adquisición de alguno de ellos para coordinar el pago?",
+        "timestamp": 1795134586922
+      },
+      {
+        "id": "msg_1795134587104175800",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "Perfecto, procedemos con la creación y activación de tu cuenta de *Office 365* para el correo `carmonadocsperu@gmail.com` (precio de *15 USD*, permanente).",
+        "timestamp": 1795134587104
+      },
+      {
+        "id": "msg_1795134587128651400",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "Tu cuenta de *Microsoft 365 ha sido creada con éxito.*\n\n*Usuario:* carmonadocsperu@247edu.online\n*Contraseña:* Tempxbw3ypip!2\n\nIngresa a https://login.microsoftonline.com para acceder y activar tu cuenta.\n\n🪄🪄 *SI YA TIENE INSTALADO EL OFFICE:*\nDescargue y ejecute este archivo: https://iral.ink/FixOffice\n\n⚠️⚠️ *RECUERDE QUE ANTES DE INSTALAR EL OFFICE 365, PRIMERO DEBE DESINSTALAR TODOS LOS MICROSOFT OFFICE DE SU ORDENADOR, Ejemplo Microsoft Office, Microsoft Visio, Microsoft Project, Microsoft Access, Microsoft Excel, Microsoft Word, Microsoft Power Point, Microsoft Publisher*\n\n💾 *INSTALADOR DEL OFFICE 365:* https://iral.ink/Office365",
+        "timestamp": 1795134587128
+      },
+      {
+        "id": "msg_1795134592665318400",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "🚨 *[NUEVO REGISTRO MS]* Cuenta creada para andreamed2503@gmail.com.\nUPN: andreamed2503@247edu.online\nPass: Tempcngwusm3!2",
+        "timestamp": 1795134592665
+      },
+      {
+        "id": "msg_1795134594457312800",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "¡Excelente, David! Me alegra que tu cuenta de Office 365 ya esté activa y lista para usar. Avísame si necesitas ayuda con algún otro servicio o documento pedagógico.",
+        "timestamp": 1795134594457
       }
     ],
-    "lastMessageAt": 1794963717157
+    "lastMessageAt": 1795134594457
   }
 }
