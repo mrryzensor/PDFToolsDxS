@@ -38,9 +38,9 @@ export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
       const data = await res.json();
       setConversations(data || []);
       
-      // Auto-select first if none selected
-      if (!selectedPhone && data && data.length > 0) {
-        setSelectedPhone(data[0].phone);
+      // Auto-select first ONLY if none is currently selected (avoid stale closure)
+      if (data && data.length > 0) {
+        setSelectedPhone((prev) => prev || data[0].phone);
       }
     } catch (err) {
       if (!silent) showToast('No se pudieron obtener las conversaciones', 'error');

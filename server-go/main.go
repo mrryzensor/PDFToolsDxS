@@ -55,6 +55,17 @@ type CatalogItem struct {
 	UpdatedAt       int64   `json:"updatedAt"`
 }
 
+type PaymentMethod struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`         // e.g. "Yape", "Plin", "BCP", "PayPal"
+	AccountInfo  string `json:"accountInfo"`  // e.g. "987654321 - Titular"
+	Instructions string `json:"instructions"` // e.g. "Enviar captura de pago"
+	ImageBase64  string `json:"imageBase64"`  // Optimized WebP 85% data URL
+	Active       bool   `json:"active"`
+	CreatedAt    int64  `json:"createdAt"`
+	UpdatedAt    int64  `json:"updatedAt"`
+}
+
 type PendingMessageBatch struct {
 	ChatJID    types.JID
 	SenderUser string
@@ -101,8 +112,11 @@ type WhatsAppServer struct {
 	conversationsLock sync.RWMutex
 	catalog           []CatalogItem
 	catalogLock       sync.RWMutex
+	paymentMethods    []PaymentMethod
+	paymentLock       sync.RWMutex
 	pendingBatches    map[string]*PendingMessageBatch
 	pendingLock       sync.Mutex
+	startedAt         time.Time
 }
 
 var serverInstance *WhatsAppServer
@@ -150,13 +164,20 @@ func NewWhatsAppServer() *WhatsAppServer {
 		_ = json.Unmarshal(data, &savedCatalog)
 	}
 
+	var savedPayments []PaymentMethod
+	if data, err := os.ReadFile("whatsapp_payments.json"); err == nil {
+		_ = json.Unmarshal(data, &savedPayments)
+	}
+
 	return &WhatsAppServer{
 		config:         cfg,
 		status:         "disconnected",
 		sessions:       savedSessions,
 		conversations:  savedConversations,
 		catalog:        savedCatalog,
+		paymentMethods: savedPayments,
 		pendingBatches: make(map[string]*PendingMessageBatch),
+		startedAt:      time.Now(),
 	}
 }
 
@@ -165,6 +186,13 @@ func (s *WhatsAppServer) SaveCatalog() {
 	defer s.catalogLock.RUnlock()
 	bytes, _ := json.MarshalIndent(s.catalog, "", "  ")
 	_ = os.WriteFile("whatsapp_catalog.json", bytes, 0644)
+}
+
+func (s *WhatsAppServer) SavePaymentMethods() {
+	s.paymentLock.RLock()
+	defer s.paymentLock.RUnlock()
+	bytes, _ := json.MarshalIndent(s.paymentMethods, "", "  ")
+	_ = os.WriteFile("whatsapp_payments.json", bytes, 0644)
 }
 
 func (s *WhatsAppServer) SaveConfig() {
@@ -512,12 +540,23 @@ func (s *WhatsAppServer) eventHandler(evt interface{}) {
 }
 
 func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
-	// Don't reply to self messages
-	if msg.Info.IsFromMe {
+	// Ignore historical/offline messages sent before the server started
+	if !s.startedAt.IsZero() && msg.Info.Timestamp.Before(s.startedAt) {
 		return
 	}
 
-	// Group and Broadcast filter (Default false / disabled)
+	// Extract text early so we can allow self-sent catalog commands (e.g. /espacio)
+	text := ""
+	if msg.Message.Conversation != nil {
+		text = *msg.Message.Conversation
+	} else if msg.Message.ExtendedTextMessage != nil && msg.Message.ExtendedTextMessage.Text != nil {
+		text = *msg.Message.ExtendedTextMessage.Text
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+
 	s.configLock.RLock()
 	allowGroups := s.config.AllowGroups
 	allowBroadcast := s.config.AllowBroadcast
@@ -526,7 +565,13 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 	apiKey := s.config.GeminiKey
 	apiKeys := s.config.GeminiKeys
 	models := s.config.Models
+	catalogCmd := strings.TrimSpace(s.config.CatalogCommand)
+	debounceSec := s.config.MessageDebounceSeconds
 	s.configLock.RUnlock()
+
+	if catalogCmd == "" {
+		catalogCmd = "/espacio"
+	}
 
 	var allKeys []string
 	if len(apiKeys) > 0 {
@@ -534,6 +579,18 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 	}
 	if apiKey != "" {
 		allKeys = append(allKeys, apiKey)
+	}
+
+	isCatalogCmd := strings.HasPrefix(strings.ToLower(text), strings.ToLower(catalogCmd))
+
+	// Don't reply to self messages UNLESS it's a catalog command (/espacio ...)
+	if msg.Info.IsFromMe && !isCatalogCmd {
+		return
+	}
+
+	if isCatalogCmd {
+		s.handleCatalogCommand(msg.Info.Chat, msg.Info.Sender.User, msg.Info.Chat.User, text, catalogCmd, msg.Info.IsFromMe, allKeys, models)
+		return
 	}
 
 	// 1. GLOBAL PAUSE: If autoReply is false, bot never answers
@@ -568,18 +625,6 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 		return // Never reply to WhatsApp broadcast channels
 	}
 
-	text := ""
-	if msg.Message.Conversation != nil {
-		text = *msg.Message.Conversation
-	} else if msg.Message.ExtendedTextMessage != nil && msg.Message.ExtendedTextMessage.Text != nil {
-		text = *msg.Message.ExtendedTextMessage.Text
-	}
-
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return
-	}
-
 	senderUser = msg.Info.Sender.User
 	senderPushName := msg.Info.PushName
 	if senderPushName == "" {
@@ -595,20 +640,6 @@ func (s *WhatsAppServer) handleIncomingMessage(msg *events.Message) {
 	conv := s.GetOrCreateConversation(senderUser, senderPushName)
 	if conv.IsPaused {
 		log.Printf("[WhatsApp Bot] Chat pausado individualmente para %s en conversaciones. Ignorando respuesta automática.\n", senderUser)
-		return
-	}
-
-	// Check if message is a custom catalog command (e.g. "/espacio ...")
-	s.configLock.RLock()
-	catalogCmd := strings.TrimSpace(s.config.CatalogCommand)
-	debounceSec := s.config.MessageDebounceSeconds
-	s.configLock.RUnlock()
-
-	if catalogCmd == "" {
-		catalogCmd = "/espacio"
-	}
-	if strings.HasPrefix(strings.ToLower(text), strings.ToLower(catalogCmd)) {
-		s.handleCatalogCommand(msg.Info.Chat, senderUser, chatUser, text, catalogCmd, allKeys, models)
 		return
 	}
 
@@ -786,6 +817,27 @@ Devuelve ÚNICAMENTE un JSON válido con la siguiente estructura exacta:
 	}
 	s.catalogLock.RUnlock()
 
+	// Build active payment methods context
+	var paymentContext strings.Builder
+	s.paymentLock.RLock()
+	payCount := 0
+	for _, pm := range s.paymentMethods {
+		if !pm.Active {
+			continue
+		}
+		payCount++
+		if payCount == 1 {
+			paymentContext.WriteString("\nMÉTODOS DE PAGO DISPONIBLES:\n")
+		}
+		hasImg := "No"
+		if pm.ImageBase64 != "" {
+			hasImg = "Sí (ID: " + pm.ID + ")"
+		}
+		paymentContext.WriteString(fmt.Sprintf("- %s | Cuenta/Dato: %s | Instrucciones: %s | Imagen QR/Pago: %s\n",
+			pm.Name, pm.AccountInfo, pm.Instructions, hasImg))
+	}
+	s.paymentLock.RUnlock()
+
 	// General short chat with conversation history context
 	chatSystemPrompt := `Eres el asesor virtual inteligente de DocuCraft Pro en WhatsApp.
 REGLAS:
@@ -793,7 +845,8 @@ REGLAS:
 2. Si te piden una sesión pedagógica, di '¡Claro! Enseguida la preparo' y no te quedes en bucles ni pidas más datos; créala.
 3. Ayudas con: Sesiones de aprendizaje CNEB, Certificados con QR, registro de alumnos/clientes, citas, productos y servicios.
 4. Conoce al cliente por su nombre o pedidos previos si ya te los ha dado en la conversación.
-5. Si preguntan por cursos, productos o servicios, usa EXACTAMENTE la información y precios del catálogo oficial.` + catalogContext.String()
+5. Si preguntan por cursos, productos o servicios, usa EXACTAMENTE la información y precios del catálogo oficial.
+6. Si preguntan cómo pagar o piden métodos de pago/QR, indícales los datos del método de pago y si tiene imagen disponible incluye al final de tu respuesta la etiqueta exacta [SEND_PAYMENT_IMG:ID_DEL_METODO] (por ejemplo [SEND_PAYMENT_IMG:pay_123456]) para que se envíe la imagen automáticamente.` + catalogContext.String() + paymentContext.String()
 
 	// Build chat history for CallGeminiChatWithKeys
 	var chatHistory []GeminiContent
@@ -827,8 +880,35 @@ REGLAS:
 		return
 	}
 
-	s.sendTextMessage(chatJID, respText)
-	s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, respText, allKeys, models)
+	// Check if Gemini requested sending payment method image(s) via [SEND_PAYMENT_IMG:<id>]
+	var paymentImgsToSend []PaymentMethod
+	s.paymentLock.RLock()
+	for _, pm := range s.paymentMethods {
+		tag := fmt.Sprintf("[SEND_PAYMENT_IMG:%s]", pm.ID)
+		if strings.Contains(respText, tag) {
+			respText = strings.ReplaceAll(respText, tag, "")
+			if pm.ImageBase64 != "" {
+				paymentImgsToSend = append(paymentImgsToSend, pm)
+			}
+		}
+	}
+	s.paymentLock.RUnlock()
+	respText = strings.TrimSpace(respText)
+
+	if respText != "" {
+		s.sendTextMessage(chatJID, respText)
+		s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, respText, allKeys, models)
+	}
+
+	for _, pm := range paymentImgsToSend {
+		cleanB64 := pm.ImageBase64
+		if idx := strings.Index(cleanB64, ","); idx != -1 {
+			cleanB64 = cleanB64[idx+1:]
+		}
+		if imgBytes, decErr := base64.StdEncoding.DecodeString(cleanB64); decErr == nil && len(imgBytes) > 0 {
+			s.sendImage(chatJID, imgBytes, "image/webp", fmt.Sprintf("💳 *%s*\n%s", pm.Name, pm.AccountInfo))
+		}
+	}
 }
 
 func (s *WhatsAppServer) sendTextMessage(to types.JID, text string) {
@@ -841,6 +921,33 @@ func (s *WhatsAppServer) sendTextMessage(to types.JID, text string) {
 	_, err := s.client.SendMessage(context.Background(), to, msg)
 	if err != nil {
 		log.Printf("[WhatsApp] Error enviando mensaje a %s: %v\n", to, err)
+	}
+}
+
+func (s *WhatsAppServer) sendImage(to types.JID, data []byte, mime, caption string) {
+	if s.client == nil || !s.client.IsConnected() {
+		return
+	}
+	uploaded, err := s.client.Upload(context.Background(), data, whatsmeow.MediaImage)
+	if err != nil {
+		log.Printf("[WhatsApp] Error subiendo imagen: %v\n", err)
+		return
+	}
+	msg := &waProto.Message{
+		ImageMessage: &waProto.ImageMessage{
+			Caption:       proto.String(caption),
+			Mimetype:      proto.String(mime),
+			URL:           proto.String(uploaded.URL),
+			DirectPath:    proto.String(uploaded.DirectPath),
+			MediaKey:      uploaded.MediaKey,
+			FileEncSHA256: uploaded.FileEncSHA256,
+			FileSHA256:    uploaded.FileSHA256,
+			FileLength:    proto.Uint64(uint64(len(data))),
+		},
+	}
+	_, err = s.client.SendMessage(context.Background(), to, msg)
+	if err != nil {
+		log.Printf("[WhatsApp] Error enviando imagen a %s: %v\n", to, err)
 	}
 }
 
@@ -1346,20 +1453,39 @@ type CatalogCommandIntent struct {
 	Description     string  `json:"description"`
 }
 
-func (s *WhatsAppServer) handleCatalogCommand(chatJID types.JID, senderUser string, chatUser string, fullText string, cmdPrefix string, allKeys []string, models []string) {
+func (s *WhatsAppServer) handleCatalogCommand(chatJID types.JID, senderUser string, chatUser string, fullText string, cmdPrefix string, isFromMe bool, allKeys []string, models []string) {
 	// 1. Check authorization
 	s.configLock.RLock()
 	authNums := s.config.AuthorizedNumbers
 	s.configLock.RUnlock()
 
-	isAuthorized := false
-	cleanSender := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(senderUser, "+", ""), " ", ""), "-", "")
-	cleanChat := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(chatUser, "+", ""), " ", ""), "-", "")
-	for _, n := range authNums {
-		cleanAuth := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(n, "+", ""), " ", ""), "-", "")
-		if cleanAuth != "" && (cleanAuth == cleanSender || cleanAuth == cleanChat || strings.HasSuffix(cleanSender, cleanAuth) || strings.HasSuffix(cleanChat, cleanAuth)) {
-			isAuthorized = true
-			break
+	isAuthorized := isFromMe
+	if !isAuthorized {
+		var candidateUsers []string
+		candidateUsers = append(candidateUsers, senderUser, chatUser)
+
+		// Resolve LID to Phone Number if WhatsApp sent a @lid JID
+		if s.client != nil && s.client.Store != nil && s.client.Store.LIDs != nil {
+			if pnJID, err := s.client.Store.LIDs.GetPNForLID(context.Background(), chatJID); err == nil && pnJID.User != "" {
+				candidateUsers = append(candidateUsers, pnJID.User)
+			}
+		}
+
+		for _, cand := range candidateUsers {
+			cleanCand := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(cand, "+", ""), " ", ""), "-", "")
+			if cleanCand == "" {
+				continue
+			}
+			for _, n := range authNums {
+				cleanAuth := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(n, "+", ""), " ", ""), "-", "")
+				if cleanAuth != "" && (cleanAuth == cleanCand || strings.HasSuffix(cleanCand, cleanAuth) || strings.HasSuffix(cleanAuth, cleanCand)) {
+					isAuthorized = true
+					break
+				}
+			}
+			if isAuthorized {
+				break
+			}
 		}
 	}
 
@@ -1654,6 +1780,95 @@ func handleDeleteCatalogItem(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
+func handleGetPayments(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	s := serverInstance
+	s.paymentLock.RLock()
+	items := s.paymentMethods
+	s.paymentLock.RUnlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	if items == nil {
+		items = []PaymentMethod{}
+	}
+	json.NewEncoder(w).Encode(items)
+}
+
+func handleSavePayment(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	var pm PaymentMethod
+	if err := json.NewDecoder(r.Body).Decode(&pm); err != nil {
+		http.Error(w, `{"error":"payload invalido"}`, http.StatusBadRequest)
+		return
+	}
+
+	now := time.Now().UnixMilli()
+	s := serverInstance
+	s.paymentLock.Lock()
+	if pm.ID == "" {
+		pm.ID = fmt.Sprintf("pay_%d", now)
+		pm.CreatedAt = now
+		pm.UpdatedAt = now
+		s.paymentMethods = append([]PaymentMethod{pm}, s.paymentMethods...)
+	} else {
+		found := false
+		for i := range s.paymentMethods {
+			if s.paymentMethods[i].ID == pm.ID {
+				pm.CreatedAt = s.paymentMethods[i].CreatedAt
+				pm.UpdatedAt = now
+				s.paymentMethods[i] = pm
+				found = true
+				break
+			}
+		}
+		if !found {
+			pm.CreatedAt = now
+			pm.UpdatedAt = now
+			s.paymentMethods = append([]PaymentMethod{pm}, s.paymentMethods...)
+		}
+	}
+	s.paymentLock.Unlock()
+	s.SavePaymentMethods()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"success": true, "paymentMethod": pm})
+}
+
+func handleDeletePayment(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	var req struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.ID == "" {
+		http.Error(w, `{"error":"id requerido"}`, http.StatusBadRequest)
+		return
+	}
+
+	s := serverInstance
+	s.paymentLock.Lock()
+	var remaining []PaymentMethod
+	for _, pm := range s.paymentMethods {
+		if pm.ID != req.ID {
+			remaining = append(remaining, pm)
+		}
+	}
+	s.paymentMethods = remaining
+	s.paymentLock.Unlock()
+	s.SavePaymentMethods()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
 func main() {
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
@@ -1675,6 +1890,9 @@ func main() {
 	http.HandleFunc("/api/whatsapp/catalog", handleGetCatalog)
 	http.HandleFunc("/api/whatsapp/catalog/save", handleSaveCatalogItem)
 	http.HandleFunc("/api/whatsapp/catalog/delete", handleDeleteCatalogItem)
+	http.HandleFunc("/api/whatsapp/payments", handleGetPayments)
+	http.HandleFunc("/api/whatsapp/payments/save", handleSavePayment)
+	http.HandleFunc("/api/whatsapp/payments/delete", handleDeletePayment)
 
 	port := 8089
 	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)

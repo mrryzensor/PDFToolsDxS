@@ -3,12 +3,13 @@ import {
   MessageSquare, Send, Users, QrCode, RefreshCw, Power, 
   Settings2, Paperclip, CheckCircle2, AlertCircle, FileText, 
   Bot, ShieldAlert, Sparkles, Phone, Upload, Trash2, Check,
-  Radio, X, GraduationCap, PauseCircle, PlayCircle, Ban, MessagesSquare, Package
+  Radio, X, GraduationCap, PauseCircle, PlayCircle, Ban, MessagesSquare, Package, CreditCard
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { getStoredGeminiKeys } from '../../utils/storage';
 import { WhatsAppConversationsView } from './WhatsAppConversationsView';
 import { WhatsAppCatalogView } from './WhatsAppCatalogView';
+import { WhatsAppPaymentsView } from './WhatsAppPaymentsView';
 
 const API_BASE = 'http://localhost:8089';
 
@@ -578,6 +579,7 @@ export const WhatsAppView = ({ onOpenApiKeysModal, onNavigateToRecords }) => {
               { id: 'send', label: 'Envío Individual / Masivo', icon: Send },
               { id: 'conversations', label: 'Conversaciones / CRM', icon: MessagesSquare },
               { id: 'catalog', label: 'Productos & Servicios', icon: Package },
+              { id: 'payments', label: 'Métodos de Pago', icon: CreditCard },
               { id: 'groups', label: `Grupos Extraídos (${groups.length})`, icon: Users },
               { id: 'bot_info', label: 'Habilidades del Chatbot (CNEB/PDF)', icon: Sparkles },
             ].map((tab) => {
@@ -622,6 +624,11 @@ export const WhatsAppView = ({ onOpenApiKeysModal, onNavigateToRecords }) => {
         {/* Tab: CATALOG (PRODUCTS & SERVICES) */}
         {subTab === 'catalog' && (
           <WhatsAppCatalogView statusData={statusData} onUpdateConfig={updateConfig} />
+        )}
+
+        {/* Tab: PAYMENT METHODS */}
+        {subTab === 'payments' && (
+          <WhatsAppPaymentsView />
         )}
 
         {/* Tab 1: SEND MESSAGE / MASSIVE CAMPAIGN */}

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "cat_1795135560818",
+    "kind": "servicio",
+    "name": "Curso de Apps en Desktop Windows + Técnico PC",
+    "price": 37,
+    "currency": "USD",
+    "category": "Curso",
+    "duration": "",
+    "modality": "Online",
+    "characteristics": "Apps en Desktop Windows, Técnico PC",
+    "description": "Curso completo enfocado en el desarrollo de aplicaciones para Desktop Windows y soporte técnico de PC.",
+    "active": true,
+    "createdAt": 1795135560818,
+    "updatedAt": 1795135560818
+  }
+]

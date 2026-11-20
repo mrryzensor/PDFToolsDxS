@@ -1,4 +1,61 @@
 {
+  "149538497155108": {
+    "phone": "149538497155108",
+    "name": "L",
+    "type": "alumno",
+    "characteristics": "Estudiante universitario",
+    "orders": "",
+    "appointmentDate": "viernes",
+    "caseSynced": false,
+    "caseCode": "",
+    "isPaused": true,
+    "summary": "",
+    "messages": [
+      {
+        "id": "msg_1795134723214029800",
+        "fromMe": false,
+        "sender": "L",
+        "text": "Buenas tardes hermano David",
+        "timestamp": 1795134723214
+      },
+      {
+        "id": "msg_1795134723541679500",
+        "fromMe": false,
+        "sender": "L",
+        "text": "Atareado",
+        "timestamp": 1795134723541
+      },
+      {
+        "id": "msg_1795134723705632200",
+        "fromMe": false,
+        "sender": "L",
+        "text": "Con todo las tareas de la uni",
+        "timestamp": 1795134723705
+      },
+      {
+        "id": "msg_1795134724838874100",
+        "fromMe": false,
+        "sender": "L",
+        "text": "Está bien hermano David",
+        "timestamp": 1795134724838
+      },
+      {
+        "id": "msg_1795134728501125200",
+        "fromMe": false,
+        "sender": "L",
+        "text": "Hermano David , el viernes a qué hora se reunirán ?",
+        "timestamp": 1795134728501
+      },
+      {
+        "id": "msg_1795134735404749900",
+        "fromMe": true,
+        "sender": "L",
+        "text": "¡Hola! Entiendo el estrés con las tareas de la universidad, pero te recuerdo que soy el asistente virtual de DocuCraft Pro, no David. Para la reunión del viernes, por favor indícame de qué tema o servicio necesitas que hablemos para agendar tu cita.",
+        "timestamp": 1795134735404
+      }
+    ],
+    "lastMessageAt": 1795134735404
+  },
   "168508830814451": {
     "phone": "168508830814451",
     "name": "Obsta. Ro Gut",
@@ -8,7 +65,7 @@
     "appointmentDate": "4:00 PM",
     "caseSynced": false,
     "caseCode": "",
-    "isPaused": false,
+    "isPaused": true,
     "summary": "",
     "messages": [
       {
@@ -152,11 +209,11 @@
     "name": "Moisés Orizano",
     "type": "interesado",
     "characteristics": "Varón",
-    "orders": "Está el Disney? | Verificación de código enviado | Error por límite de solicitudes alcanzado",
+    "orders": "Está el Disney? | Verificación de código enviado | Error por límite de solicitudes alcanzado | No tuve tiempo de animarlos o confirmar sus asistencia",
     "appointmentDate": "",
     "caseSynced": false,
     "caseCode": "",
-    "isPaused": false,
+    "isPaused": true,
     "summary": "",
     "messages": [
       {
@@ -207,16 +264,44 @@
         "sender": "Moisés Orizano",
         "text": "¡Hola! Parece que hubo un pequeño error con el mensaje anterior. ¿En qué te puedo ayudar hoy con DocuCraft Pro, ya sea sobre sesiones CNEB, certificados o nuestros servicios?",
         "timestamp": 1795134594088
+      },
+      {
+        "id": "msg_1795134739777191900",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "No creo varón",
+        "timestamp": 1795134739777
+      },
+      {
+        "id": "msg_1795134740133036900",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "No tuve tiempo de animarlos o confirmar sus asistencia",
+        "timestamp": 1795134740133
+      },
+      {
+        "id": "msg_1795134740137202500",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "Puedes preguntarle a Juanca,",
+        "timestamp": 1795134740137
+      },
+      {
+        "id": "msg_1795134740140359000",
+        "fromMe": false,
+        "sender": "Moisés Orizano",
+        "text": "?",
+        "timestamp": 1795134740140
       }
     ],
-    "lastMessageAt": 1795134594088
+    "lastMessageAt": 1795134740140
   },
   "268406230098154": {
     "phone": "268406230098154",
     "name": "Ing David Salcedo",
     "type": "interesado",
-    "characteristics": "",
-    "orders": "",
+    "characteristics": "Ingeniero",
+    "orders": "Consulta sobre cursos disponibles",
     "appointmentDate": "",
     "caseSynced": false,
     "caseCode": "",
@@ -257,9 +342,23 @@
         "sender": "Ing David Salcedo",
         "text": "¡Claro que sí! Tu cita para certificación con QR quedó agendada para mañana a las 9:00 a.m. ¿Te ayudo con algo más para ese día?",
         "timestamp": 1794963142428
+      },
+      {
+        "id": "msg_1795135628535633600",
+        "fromMe": false,
+        "sender": "Ing David Salcedo",
+        "text": "tienes algún curso disponible?",
+        "timestamp": 1795135628535
+      },
+      {
+        "id": "msg_1795135634850670900",
+        "fromMe": true,
+        "sender": "Ing David Salcedo",
+        "text": "¡Claro! Tenemos disponible el *Curso de Apps en Desktop Windows + Técnico PC* a solo 37.00 USD (modalidad online). ¿Te gustaría inscribirte o necesitas información de otro servicio?",
+        "timestamp": 1795135634850
       }
     ],
-    "lastMessageAt": 1794963142428
+    "lastMessageAt": 1795135634850
   },
   "275161408368664": {
     "phone": "275161408368664",
@@ -313,7 +412,7 @@
     "appointmentDate": "mañana por la tarde",
     "caseSynced": false,
     "caseCode": "",
-    "isPaused": false,
+    "isPaused": true,
     "summary": "",
     "messages": [
       {
@@ -352,7 +451,7 @@
     "name": "David Salcedo Informático",
     "type": "cliente",
     "characteristics": "Correo: mr.ryzensor@gmail.com | Correo: mr.ryzensor@gmail.com, Correo Office: carmonadocsperu@gmail.com, Precio: 15 USD permanente | Correo Office: andreamed2503@247edu.online, Pass: Tempcngwusm3!2",
-    "orders": "Inscripción al curso de Inteligencia Artificial con Antigravity | Adquisición de cuenta Office 365 o Autodesk | Creación y activación de cuenta de Office 365 para el correo carmonadocsperu@gmail.com | Creación y activación de cuenta Office 365 para andreamed2503@gmail.com",
+    "orders": "Inscripción al curso de Inteligencia Artificial con Antigravity | Adquisición de cuenta Office 365 o Autodesk | Creación y activación de cuenta de Office 365 para el correo carmonadocsperu@gmail.com | Creación y activación de cuenta Office 365 para andreamed2503@gmail.com | Inscripción al curso de Inteligencia Artificial con Antigravity | Adquisición de cuenta Office 365 o Autodesk | Creación y activación de cuenta de Office 365 para el correo carmonadocsperu@gmail.com | Creación y activación de cuenta Office 365 para andreamed2503@gmail.com | Creación del curso de Apps en Desktop Windows + Técnico PC a precio de 37 USD",
     "appointmentDate": "",
     "caseSynced": false,
     "caseCode": "",
@@ -435,8 +534,43 @@
         "sender": "David Salcedo Informático",
         "text": "¡Excelente, David! Me alegra que tu cuenta de Office 365 ya esté activa y lista para usar. Avísame si necesitas ayuda con algún otro servicio o documento pedagógico.",
         "timestamp": 1795134594457
+      },
+      {
+        "id": "msg_1795135263610998100",
+        "fromMe": false,
+        "sender": "David Salcedo Informático",
+        "text": "/espacio crea el curso de Apps en Desktop Windows + Técnico PC a precio de 37 USD",
+        "timestamp": 1795135263610
+      },
+      {
+        "id": "msg_1795135263979088900",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "⛔ No tienes autorización para usar el comando de gestión de catálogo (/espacio).",
+        "timestamp": 1795135263979
+      },
+      {
+        "id": "msg_1795135366682061300",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "⛔ No tienes autorización para usar el comando de gestión de catálogo (/espacio).",
+        "timestamp": 1795135366682
+      },
+      {
+        "id": "msg_1795135439520445600",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "⛔ No tienes autorización para usar el comando de gestión de catálogo (/espacio).",
+        "timestamp": 1795135439520
+      },
+      {
+        "id": "msg_1795135561050149900",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "✅ *Servicio creado exitosamente:*\n📌 *Nombre:* Curso de Apps en Desktop Windows + Técnico PC\n💰 *Precio:* 37.00 USD\n🏷️ *Categoría:* Curso",
+        "timestamp": 1795135561050
       }
     ],
-    "lastMessageAt": 1795134594457
+    "lastMessageAt": 1795135561050
   }
 }
