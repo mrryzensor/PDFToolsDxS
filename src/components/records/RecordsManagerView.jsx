@@ -37,7 +37,8 @@ export const RecordsManagerView = () => {
   useEffect(() => {
     const syncFromWhatsApp = async () => {
       try {
-        const res = await fetch('http://localhost:8089/api/whatsapp/conversations');
+        const apiBase = import.meta.env.DEV ? 'http://localhost:8089' : '';
+        const res = await fetch(`${apiBase}/api/whatsapp/conversations`);
         if (!res.ok) return;
         const convList = await res.json();
         if (!Array.isArray(convList) || convList.length === 0) return;

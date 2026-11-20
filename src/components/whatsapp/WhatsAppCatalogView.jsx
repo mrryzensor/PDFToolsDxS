@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 
-const API_BASE = 'http://localhost:8089';
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8089' : '';
 
 export const WhatsAppCatalogView = ({ statusData, onUpdateConfig }) => {
   const { showToast } = useToast();

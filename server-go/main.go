@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -121,6 +122,16 @@ type WhatsAppServer struct {
 
 var serverInstance *WhatsAppServer
 
+func dataPath(filename string) string {
+	dir := os.Getenv("DATA_DIR")
+	if dir == "" {
+		dir = "."
+	} else {
+		_ = os.MkdirAll(dir, 0755)
+	}
+	return filepath.Join(dir, filename)
+}
+
 func NewWhatsAppServer() *WhatsAppServer {
 	cfg := Config{
 		AllowGroups:            false,
@@ -139,7 +150,7 @@ func NewWhatsAppServer() *WhatsAppServer {
 	}
 
 	// Try loading saved config
-	if data, err := os.ReadFile("whatsapp_config.json"); err == nil {
+	if data, err := os.ReadFile(dataPath("whatsapp_config.json")); err == nil {
 		_ = json.Unmarshal(data, &cfg)
 	}
 	if strings.TrimSpace(cfg.CatalogCommand) == "" {
@@ -150,22 +161,22 @@ func NewWhatsAppServer() *WhatsAppServer {
 	}
 
 	var savedSessions []map[string]interface{}
-	if data, err := os.ReadFile("whatsapp_sessions.json"); err == nil {
+	if data, err := os.ReadFile(dataPath("whatsapp_sessions.json")); err == nil {
 		_ = json.Unmarshal(data, &savedSessions)
 	}
 
 	savedConversations := make(map[string]*ContactConversation)
-	if data, err := os.ReadFile("whatsapp_conversations.json"); err == nil {
+	if data, err := os.ReadFile(dataPath("whatsapp_conversations.json")); err == nil {
 		_ = json.Unmarshal(data, &savedConversations)
 	}
 
 	var savedCatalog []CatalogItem
-	if data, err := os.ReadFile("whatsapp_catalog.json"); err == nil {
+	if data, err := os.ReadFile(dataPath("whatsapp_catalog.json")); err == nil {
 		_ = json.Unmarshal(data, &savedCatalog)
 	}
 
 	var savedPayments []PaymentMethod
-	if data, err := os.ReadFile("whatsapp_payments.json"); err == nil {
+	if data, err := os.ReadFile(dataPath("whatsapp_payments.json")); err == nil {
 		_ = json.Unmarshal(data, &savedPayments)
 	}
 
@@ -416,7 +427,7 @@ func (s *WhatsAppServer) SaveSessionRecord(record map[string]interface{}) {
 	defer s.sessionsLock.Unlock()
 	s.sessions = append([]map[string]interface{}{record}, s.sessions...)
 	bytes, _ := json.MarshalIndent(s.sessions, "", "  ")
-	_ = os.WriteFile("whatsapp_sessions.json", bytes, 0644)
+	_ = os.WriteFile(dataPath("whatsapp_sessions.json"), bytes, 0644)
 }
 
 func (s *WhatsAppServer) InitWhatsApp() error {
@@ -504,9 +515,9 @@ func (s *WhatsAppServer) ResetAndGetQR() error {
 	}
 
 	// Remove session db so a completely fresh QR session starts
-	_ = os.Remove("whatsapp_session.db")
-	_ = os.Remove("whatsapp_session.db-wal")
-	_ = os.Remove("whatsapp_session.db-shm")
+	_ = os.Remove(dataPath("whatsapp_session.db"))
+	_ = os.Remove(dataPath("whatsapp_session.db-wal"))
+	_ = os.Remove(dataPath("whatsapp_session.db-shm"))
 
 	s.qrLock.Lock()
 	s.qrCode = ""
@@ -1200,9 +1211,9 @@ func handleLogout(w http.ResponseWriter, r *http.Request) {
 		_ = s.container.Close()
 	}
 
-	_ = os.Remove("whatsapp_session.db")
-	_ = os.Remove("whatsapp_session.db-wal")
-	_ = os.Remove("whatsapp_session.db-shm")
+	_ = os.Remove(dataPath("whatsapp_session.db"))
+	_ = os.Remove(dataPath("whatsapp_session.db-wal"))
+	_ = os.Remove(dataPath("whatsapp_session.db-shm"))
 
 	s.qrLock.Lock()
 	s.qrCode = ""
@@ -2011,9 +2022,36 @@ func main() {
 	http.HandleFunc("/api/whatsapp/payments/save", handleSavePayment)
 	http.HandleFunc("/api/whatsapp/payments/delete", handleDeletePayment)
 
-	port := 8089
-	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%d\n", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	// Serve built frontend static files in production (Docker / Coolify)
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		if _, err := os.Stat("./dist"); err == nil {
+			staticDir = "./dist"
+		}
+	}
+	if staticDir != "" {
+		fs := http.FileServer(http.Dir(staticDir))
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				http.NotFound(w, r)
+				return
+			}
+			fullPath := filepath.Join(staticDir, filepath.Clean(r.URL.Path))
+			if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+				fs.ServeHTTP(w, r)
+				return
+			}
+			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		})
+		log.Printf("[WhatsApp Server Go] Sirviendo frontend estático desde %s\n", staticDir)
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8089"
+	}
+	log.Printf("[WhatsApp Server Go] Escuchando en http://localhost:%s\n", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatalf("Error iniciando servidor Go: %v", err)
 	}
 }

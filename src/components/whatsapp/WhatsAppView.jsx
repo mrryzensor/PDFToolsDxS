@@ -11,7 +11,7 @@ import { WhatsAppConversationsView } from './WhatsAppConversationsView';
 import { WhatsAppCatalogView } from './WhatsAppCatalogView';
 import { WhatsAppPaymentsView } from './WhatsAppPaymentsView';
 
-const API_BASE = 'http://localhost:8089';
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8089' : '';
 
 export const WhatsAppView = ({ onOpenApiKeysModal, onNavigateToRecords }) => {
   const { showToast } = useToast();

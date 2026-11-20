@@ -576,8 +576,15 @@
         "sender": "David Salcedo Informático",
         "text": "✏️ *Catálogo actualizado:* Curso de Apps en Desktop Windows + Técnico PC",
         "timestamp": 1795135990658
+      },
+      {
+        "id": "msg_1795136290463553600",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "✅ *Método de pago agregado:*\n💳 *Nombre:* Yape/Plin\n🔢 *Cuenta/Dato:* 976020013",
+        "timestamp": 1795136290463
       }
     ],
-    "lastMessageAt": 1795135990658
+    "lastMessageAt": 1795136290463
   }
 }

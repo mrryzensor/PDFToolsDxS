@@ -8,7 +8,7 @@ import {
 import { useToast } from '../../context/ToastContext';
 import { getRecordsCases, saveRecordCase } from '../../utils/storage';
 
-const API_BASE = 'http://localhost:8089';
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8089' : '';
 
 export const WhatsAppConversationsView = ({ onNavigateToRecords }) => {
   const { showToast } = useToast();
