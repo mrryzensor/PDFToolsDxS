@@ -2,7 +2,9 @@
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -118,6 +120,8 @@ type WhatsAppServer struct {
 	pendingBatches    map[string]*PendingMessageBatch
 	pendingLock       sync.Mutex
 	startedAt         time.Time
+	authTokens        map[string]int64
+	authLock          sync.RWMutex
 }
 
 var serverInstance *WhatsAppServer
@@ -189,6 +193,7 @@ func NewWhatsAppServer() *WhatsAppServer {
 		paymentMethods: savedPayments,
 		pendingBatches: make(map[string]*PendingMessageBatch),
 		startedAt:      time.Now(),
+		authTokens:     make(map[string]int64),
 	}
 }
 
@@ -1997,13 +2002,147 @@ func handleDeletePayment(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
+func loadDotEnv() {
+	for _, path := range []string{".env", "../.env"} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		lines := strings.Split(string(data), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			k := strings.TrimSpace(parts[0])
+			v := strings.Trim(strings.TrimSpace(parts[1]), `"'`)
+			if k != "" && os.Getenv(k) == "" {
+				_ = os.Setenv(k, v)
+			}
+		}
+	}
+}
+
+func getAdminCredentials() (string, string) {
+	email := strings.TrimSpace(os.Getenv("ADMIN_EMAIL"))
+	pass := strings.TrimSpace(os.Getenv("ADMIN_PASSWORD"))
+	if email == "" {
+		email = "admin@docucraft.com"
+	}
+	if pass == "" {
+		pass = "admin123"
+	}
+	return email, pass
+}
+
+func generateAuthToken() string {
+	b := make([]byte, 24)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func handleAuthLogin(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"Payload inválido"}`, http.StatusBadRequest)
+		return
+	}
+
+	adminEmail, adminPass := getAdminCredentials()
+	if strings.EqualFold(strings.TrimSpace(req.Email), adminEmail) && req.Password == adminPass {
+		token := generateAuthToken()
+		s := serverInstance
+		s.authLock.Lock()
+		s.authTokens[token] = time.Now().Add(7 * 24 * time.Hour).UnixMilli()
+		s.authLock.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": true,
+			"token":   token,
+			"email":   adminEmail,
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": false,
+		"error":   "Correo o contraseña incorrectos",
+	})
+}
+
+func handleAuthVerify(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	authHeader := r.Header.Get("Authorization")
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if token == "" || token == authHeader {
+		token = r.URL.Query().Get("token")
+	}
+
+	s := serverInstance
+	s.authLock.RLock()
+	exp, ok := s.authTokens[token]
+	s.authLock.RUnlock()
+
+	if ok && time.Now().UnixMilli() < exp {
+		adminEmail, _ := getAdminCredentials()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"authenticated": true,
+			"email":         adminEmail,
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusUnauthorized)
+	json.NewEncoder(w).Encode(map[string]interface{}{"authenticated": false})
+}
+
+func handleAuthLogout(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+	if r.Method == "OPTIONS" {
+		return
+	}
+	authHeader := r.Header.Get("Authorization")
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+	if token != "" && token != authHeader {
+		s := serverInstance
+		s.authLock.Lock()
+		delete(s.authTokens, token)
+		s.authLock.Unlock()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
 func main() {
+	loadDotEnv()
 	serverInstance = NewWhatsAppServer()
 	log.Println("[WhatsApp Server Go] Inicializando cliente whatsmeow...")
 	if err := serverInstance.InitWhatsApp(); err != nil {
 		log.Printf("[WhatsApp Server Go] Aviso al inicializar: %v\n", err)
 	}
 
+	http.HandleFunc("/api/auth/login", handleAuthLogin)
+	http.HandleFunc("/api/auth/verify", handleAuthVerify)
+	http.HandleFunc("/api/auth/logout", handleAuthLogout)
 	http.HandleFunc("/api/whatsapp/status", handleStatus)
 	http.HandleFunc("/api/whatsapp/config", handleConfig)
 	http.HandleFunc("/api/whatsapp/groups", handleGetGroups)

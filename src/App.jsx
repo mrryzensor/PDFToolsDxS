@@ -12,6 +12,7 @@ import { RubricsView } from './components/rubrics/RubricsView';
 import { WhatsAppView } from './components/whatsapp/WhatsAppView';
 import { RecordsManagerView } from './components/records/RecordsManagerView';
 import { ApiKeysModal } from './components/common/ApiKeysModal';
+import { LoginView } from './components/auth/LoginView';
 import { useToast } from './context/ToastContext';
 import { Plus, Layers } from 'lucide-react';
 import { exportToWord, exportEditorToPDF } from './utils/pdfEngine';
@@ -19,6 +20,40 @@ import { saveAs } from 'file-saver';
 
 export const App = () => {
   const { showToast } = useToast();
+  const [authChecking, setAuthChecking] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const token = localStorage.getItem('docucraft_auth_token');
+      if (!token) {
+        setAuthChecking(false);
+        return;
+      }
+      try {
+        const apiBase = import.meta.env.DEV ? 'http://localhost:8089' : '';
+        const res = await fetch(`${apiBase}/api/auth/verify`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated) {
+            setIsAuthenticated(true);
+          } else {
+            localStorage.removeItem('docucraft_auth_token');
+          }
+        } else {
+          localStorage.removeItem('docucraft_auth_token');
+        }
+      } catch (err) {
+        // Offline or server restarting
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+    verifyAuth();
+  }, []);
+
   // Active module view: 'editor' | 'tools' | 'certificates' | 'sessions' | 'rubrics'
   const [currentView, setCurrentView] = useState('editor');
   const [activeRibbonTab, setActiveRibbonTab] = useState('inicio');
@@ -354,6 +389,18 @@ export const App = () => {
 
   const activePage = pages[activePageIndex] || pages[0];
   const selectedElement = activePage?.elements.find(el => el.id === selectedElementId);
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-surface dark:bg-slate-950 text-on-surface-variant text-xs">
+        Verificando sesión...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginView onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-surface text-on-surface">
