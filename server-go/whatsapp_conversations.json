@@ -569,8 +569,15 @@
         "sender": "David Salcedo Informático",
         "text": "✅ *Servicio creado exitosamente:*\n📌 *Nombre:* Curso de Apps en Desktop Windows + Técnico PC\n💰 *Precio:* 37.00 USD\n🏷️ *Categoría:* Curso",
         "timestamp": 1795135561050
+      },
+      {
+        "id": "msg_1795135990658206200",
+        "fromMe": true,
+        "sender": "David Salcedo Informático",
+        "text": "✏️ *Catálogo actualizado:* Curso de Apps en Desktop Windows + Técnico PC",
+        "timestamp": 1795135990658
       }
     ],
-    "lastMessageAt": 1795135561050
+    "lastMessageAt": 1795135990658
   }
 }

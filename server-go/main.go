@@ -1440,6 +1440,7 @@ func handleTogglePauseConversation(w http.ResponseWriter, r *http.Request) {
 }
 
 type CatalogCommandIntent struct {
+	Target          string  `json:"target"`          // "catalog" | "payment"
 	Action          string  `json:"action"`          // "create" | "update" | "delete" | "list"
 	TargetName      string  `json:"targetName"`      // Name to match for update/delete
 	Kind            string  `json:"kind"`            // "producto" | "servicio"
@@ -1451,6 +1452,8 @@ type CatalogCommandIntent struct {
 	Modality        string  `json:"modality"`
 	Characteristics string  `json:"characteristics"`
 	Description     string  `json:"description"`
+	AccountInfo     string  `json:"accountInfo"`     // For payment: phone, account number, CCI, link
+	Instructions    string  `json:"instructions"`    // For payment: instructions
 }
 
 func (s *WhatsAppServer) handleCatalogCommand(chatJID types.JID, senderUser string, chatUser string, fullText string, cmdPrefix string, isFromMe bool, allKeys []string, models []string) {
@@ -1511,34 +1514,44 @@ func (s *WhatsAppServer) handleCatalogCommand(chatJID types.JID, senderUser stri
 		return
 	}
 
-	// Build existing catalog names for update/delete matching
+	// Build existing catalog & payment names for update/delete matching
 	s.catalogLock.RLock()
 	var existingNames []string
 	for _, item := range s.catalog {
-		existingNames = append(existingNames, fmt.Sprintf("%s (%s - %.2f %s)", item.Name, item.Kind, item.Price, item.Currency))
+		existingNames = append(existingNames, fmt.Sprintf("[CATÁLOGO] %s (%s - %.2f %s)", item.Name, item.Kind, item.Price, item.Currency))
 	}
 	s.catalogLock.RUnlock()
 
-	systemPrompt := `Eres un intérprete de comandos de catálogo de Productos y Servicios.
-El usuario autorizado quiere crear, modificar/actualizar, eliminar o listar productos o servicios.
+	s.paymentLock.RLock()
+	for _, pm := range s.paymentMethods {
+		existingNames = append(existingNames, fmt.Sprintf("[PAGO] %s (%s)", pm.Name, pm.AccountInfo))
+	}
+	s.paymentLock.RUnlock()
+
+	systemPrompt := `Eres un intérprete de comandos administrativos para:
+1) Catálogo de Productos y Servicios ("target": "catalog")
+2) Métodos de Pago ("target": "payment") — ej. Yape, Plin, BCP, Interbank, PayPal, Binance, transferencias, cuentas, números de pago.
+
 Analiza la instrucción y devuelve ÚNICAMENTE un JSON válido con esta estructura exacta:
 {
+  "target": "catalog" | "payment",
   "action": "create" | "update" | "delete" | "list",
-  "targetName": "nombre del producto/servicio existente si es update o delete",
+  "targetName": "nombre existente si es update o delete",
   "kind": "producto" | "servicio",
-  "name": "Nombre del producto o servicio",
+  "name": "Nombre del producto/servicio o del método de pago",
   "price": 37.0,
   "currency": "USD",
   "category": "Curso" | "Software" | "Asesoría" | "Servicio Técnico" | "Otro",
-  "duration": "duración o acceso si se menciona, sino vacío",
+  "duration": "",
   "modality": "Online" | "Presencial" | "Digital" | "",
-  "characteristics": "características clave separadas por comas si se mencionan",
-  "description": "descripción breve y atractiva basada en la instrucción"
+  "characteristics": "",
+  "description": "",
+  "accountInfo": "número, cuenta, CCI o enlace si es método de pago",
+  "instructions": "instrucciones de pago si se mencionan"
 }
 Reglas:
-- Cursos, capacitaciones, asesorías, talleres o soporte son "servicio".
-- Software, licencias, libros, equipos o guías descargables son "producto".
-- Si no especifica moneda, usa "USD" o "PEN" según el contexto (por defecto "USD").`
+- Si menciona método de pago, Yape, Plin, banco, cuenta, CCI, PayPal o Binance -> "target": "payment".
+- Si menciona curso, producto, servicio, software, taller -> "target": "catalog".`
 
 	userPrompt := fmt.Sprintf("Catálogo actual:\n%s\n\nInstrucción del administrador:\n%s", strings.Join(existingNames, "\n"), instruction)
 	jsonText, _, err := CallGeminiWithKeys(allKeys, models, systemPrompt, userPrompt, false)
@@ -1564,6 +1577,110 @@ Reglas:
 
 	now := time.Now().UnixMilli()
 	var reply string
+
+	if strings.ToLower(intent.Target) == "payment" {
+		switch strings.ToLower(intent.Action) {
+		case "list":
+			s.paymentLock.RLock()
+			if len(s.paymentMethods) == 0 {
+				reply = "💳 No hay métodos de pago registrados actualmente."
+			} else {
+				var sb strings.Builder
+				sb.WriteString("💳 *Métodos de Pago:*\n")
+				for i, pm := range s.paymentMethods {
+					status := "✅"
+					if !pm.Active {
+						status = "⏸️"
+					}
+					sb.WriteString(fmt.Sprintf("%d. %s *%s* — %s\n", i+1, status, pm.Name, pm.AccountInfo))
+				}
+				reply = sb.String()
+			}
+			s.paymentLock.RUnlock()
+
+		case "create":
+			newPM := PaymentMethod{
+				ID:           fmt.Sprintf("pay_%d", now),
+				Name:         intent.Name,
+				AccountInfo:  intent.AccountInfo,
+				Instructions: intent.Instructions,
+				Active:       true,
+				CreatedAt:    now,
+				UpdatedAt:    now,
+			}
+			s.paymentLock.Lock()
+			s.paymentMethods = append([]PaymentMethod{newPM}, s.paymentMethods...)
+			s.paymentLock.Unlock()
+			s.SavePaymentMethods()
+			reply = fmt.Sprintf("✅ *Método de pago agregado:*\n💳 *Nombre:* %s\n🔢 *Cuenta/Dato:* %s", newPM.Name, newPM.AccountInfo)
+
+		case "update":
+			target := strings.ToLower(strings.TrimSpace(intent.TargetName))
+			if target == "" {
+				target = strings.ToLower(strings.TrimSpace(intent.Name))
+			}
+			updated := false
+			var updatedName string
+			s.paymentLock.Lock()
+			for i := range s.paymentMethods {
+				if strings.Contains(strings.ToLower(s.paymentMethods[i].Name), target) || strings.Contains(target, strings.ToLower(s.paymentMethods[i].Name)) {
+					if intent.Name != "" {
+						s.paymentMethods[i].Name = intent.Name
+					}
+					if intent.AccountInfo != "" {
+						s.paymentMethods[i].AccountInfo = intent.AccountInfo
+					}
+					if intent.Instructions != "" {
+						s.paymentMethods[i].Instructions = intent.Instructions
+					}
+					s.paymentMethods[i].UpdatedAt = now
+					updatedName = s.paymentMethods[i].Name
+					updated = true
+					break
+				}
+			}
+			s.paymentLock.Unlock()
+			if updated {
+				s.SavePaymentMethods()
+				reply = fmt.Sprintf("✏️ *Método de pago actualizado:* %s", updatedName)
+			} else {
+				reply = fmt.Sprintf("⚠️ No encontré ningún método de pago que coincida con *%s*.", intent.TargetName)
+			}
+
+		case "delete":
+			target := strings.ToLower(strings.TrimSpace(intent.TargetName))
+			if target == "" {
+				target = strings.ToLower(strings.TrimSpace(intent.Name))
+			}
+			deleted := false
+			var deletedName string
+			s.paymentLock.Lock()
+			var remaining []PaymentMethod
+			for _, pm := range s.paymentMethods {
+				if !deleted && (strings.Contains(strings.ToLower(pm.Name), target) || strings.Contains(target, strings.ToLower(pm.Name))) {
+					deleted = true
+					deletedName = pm.Name
+					continue
+				}
+				remaining = append(remaining, pm)
+			}
+			s.paymentMethods = remaining
+			s.paymentLock.Unlock()
+			if deleted {
+				s.SavePaymentMethods()
+				reply = fmt.Sprintf("🗑️ *Método de pago eliminado:* %s", deletedName)
+			} else {
+				reply = fmt.Sprintf("⚠️ No encontré ningún método de pago para eliminar con el nombre *%s*.", intent.TargetName)
+			}
+
+		default:
+			reply = "ℹ️ Acción no reconocida para métodos de pago."
+		}
+
+		s.sendTextMessage(chatJID, reply)
+		s.AddMessageToConversation(senderUser, "DocuCraft Bot", true, reply, allKeys, models)
+		return
+	}
 
 	switch strings.ToLower(intent.Action) {
 	case "list":
